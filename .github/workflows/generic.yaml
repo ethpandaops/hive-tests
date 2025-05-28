@@ -12,16 +12,14 @@ on:
       simulator:
         type: string
         default: >-
-          '
-            "devp2p",
-            "ethereum/consensus",
-            "ethereum/eest/consume-engine",
-            "ethereum/eest/consume-rlp"
-            "ethereum/engine",
-            "ethereum/graphql"
-            "ethereum/rpc-compat",
-            "ethereum/sync",
-          '
+          "devp2p",
+          "ethereum/consensus",
+          "ethereum/eest/consume-engine",
+          "ethereum/eest/consume-rlp"
+          "ethereum/engine",
+          "ethereum/graphql"
+          "ethereum/rpc-compat",
+          "ethereum/sync"
         description: Comma-separated list of simulators to test .e.g ethereum/rpc-compat, ethereum/eest/consume-engine, ethereum/eest/consume-rlp
       hive_version:
         type: string
