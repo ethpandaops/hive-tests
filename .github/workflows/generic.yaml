@@ -11,7 +11,17 @@ on:
         description: Comma-separated list of clients to test .e.g go-ethereum, besu, reth, nethermind, erigon, ethereumjs, nimbus-el
       simulator:
         type: string
-        default: '"ethereum/eest/consume-engine","ethereum/eest/consume-rlp"'
+        default: >-
+          '
+            "devp2p",
+            "ethereum/consensus",
+            "ethereum/eest/consume-engine",
+            "ethereum/eest/consume-rlp"
+            "ethereum/engine",
+            "ethereum/graphql"
+            "ethereum/rpc-compat",
+            "ethereum/sync",
+          '
         description: Comma-separated list of simulators to test .e.g ethereum/rpc-compat, ethereum/eest/consume-engine, ethereum/eest/consume-rlp
       hive_version:
         type: string
@@ -246,7 +256,7 @@ jobs:
               "go-ethereum",
               "nethermind"
               "nimbus-el",
-              "reth",
+              "reth"
           '))}}
         simulator: >-
           ${{
@@ -258,7 +268,7 @@ jobs:
               "ethereum/engine",
               "ethereum/graphql"
               "ethereum/rpc-compat",
-              "ethereum/sync",
+              "ethereum/sync"
           '))}}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2

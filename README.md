@@ -34,7 +34,7 @@ The repository runs various test simulators including:
 ## Automation
 
 ### Scheduled Runs
-Tests run automatically every day at 02:15 UTC via GitHub Actions.
+Tests run automatically every day via GitHub Actions.
 
 ### Manual Execution
 You can manually trigger test runs through the GitHub Actions interface with customizable parameters:
