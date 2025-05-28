@@ -10,26 +10,26 @@ Hive Tests runs comprehensive compatibility and conformance tests across multipl
 
 The following Ethereum execution clients are tested:
 
-- **go-ethereum** (Geth) - The Go implementation of Ethereum
-- **Besu** - Enterprise-grade Java Ethereum client
-- **Reth** - Rust-based Ethereum execution client
-- **Nethermind** - .NET Ethereum client
-- **Erigon** - High-performance Ethereum client
-- **EthereumJS** - JavaScript implementation of Ethereum
-- **Nimbus-EL** - Nim-based Ethereum execution layer client
+- **[go-ethereum](https://github.com/ethereum/go-ethereum)** (Geth) - The Go implementation of Ethereum
+- **[Besu](https://github.com/hyperledger/besu)** - Enterprise-grade Java Ethereum client
+- **[Reth](https://github.com/paradigmxyz/reth)** - Rust-based Ethereum execution client
+- **[Nethermind](https://github.com/NethermindEth/nethermind)** - .NET Ethereum client
+- **[Erigon](https://github.com/ledgerwatch/erigon)** - High-performance Ethereum client
+- **[EthereumJS](https://github.com/ethereumjs/ethereumjs-monorepo)** - JavaScript implementation of Ethereum
+- **[Nimbus-EL](https://github.com/status-im/nimbus-eth1)** - Nim-based Ethereum execution layer client
 
 ## Test Simulators
 
 The repository runs various test simulators including:
 
-- **ethereum/eest/consume-engine** - Engine API tests using execution spec tests
-- **ethereum/eest/consume-rlp** - RLP encoding/decoding tests
-- **ethereum/rpc-compat** - JSON-RPC API compatibility tests
-- **ethereum/consensus** - Consensus layer integration tests
-- **ethereum/engine** - Engine API tests
-- **ethereum/sync** - Synchronization tests
-- **ethereum/graphql** - GraphQL API tests
-- **devp2p** - Peer-to-peer networking tests
+- **[ethereum/eest/consume-engine](https://github.com/ethereum/hive/tree/master/simulators/ethereum/eest/consume-engine)**
+- **[ethereum/eest/consume-rlp](https://github.com/ethereum/hive/tree/master/simulators/ethereum/eest/consume-rlp)**
+- **[ethereum/rpc-compat](https://github.com/ethereum/hive/tree/master/simulators/ethereum/rpc-compat)**
+- **[ethereum/consensus](https://github.com/ethereum/hive/tree/master/simulators/ethereum/consensus)**
+- **[ethereum/engine](https://github.com/ethereum/hive/tree/master/simulators/ethereum/engine)**
+- **[ethereum/sync](https://github.com/ethereum/hive/tree/master/simulators/ethereum/sync)**
+- **[ethereum/graphql](https://github.com/ethereum/hive/tree/master/simulators/ethereum/graphql)**
+- **[devp2p](https://github.com/ethereum/hive/tree/master/simulators/devp2p)**
 
 ## Automation
 
