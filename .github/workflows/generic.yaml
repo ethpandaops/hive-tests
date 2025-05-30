@@ -249,10 +249,10 @@ jobs:
           ${{
             fromJSON(format('[{0}]', inputs.client || '
               "besu",
-              "erigon"
+              "erigon",
               "ethereumjs",
               "go-ethereum",
-              "nethermind"
+              "nethermind",
               "nimbus-el",
               "reth"
           '))}}
@@ -262,9 +262,9 @@ jobs:
               "devp2p",
               "ethereum/consensus",
               "ethereum/eest/consume-engine",
-              "ethereum/eest/consume-rlp"
+              "ethereum/eest/consume-rlp",
               "ethereum/engine",
-              "ethereum/graphql"
+              "ethereum/graphql",
               "ethereum/rpc-compat",
               "ethereum/sync"
           '))}}
