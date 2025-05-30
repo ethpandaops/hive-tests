@@ -34,9 +34,11 @@ The repository runs various test simulators including:
 ## Automation
 
 ### Scheduled Runs
+
 Tests run automatically every day via GitHub Actions.
 
 ### Manual Execution
+
 You can manually trigger test runs through the GitHub Actions interface with customizable parameters:
 
 - **Client Selection**: Choose which clients to test
@@ -46,6 +48,7 @@ You can manually trigger test runs through the GitHub Actions interface with cus
 ## Test Results
 
 Test results are automatically uploaded to:
+
 - **S3 Storage**: Results are stored in the `hive-results` bucket
 - **Public Dashboard**: Available at https://hive.ethpandaops.io/
 - **GitHub Artifacts**: Downloadable from the workflow runs
@@ -57,6 +60,7 @@ The workflow supports testing different versions of clients by specifying reposi
 ## Infrastructure
 
 Tests run on a combination of:
+
 - GitHub-hosted runners for lighter test suites
 - Self-hosted runners for resource-intensive tests (consensus, engine, EEST simulators)
 
