@@ -15,9 +15,9 @@ on:
           "devp2p",
           "ethereum/consensus",
           "ethereum/eest/consume-engine",
-          "ethereum/eest/consume-rlp"
+          "ethereum/eest/consume-rlp",
           "ethereum/engine",
-          "ethereum/graphql"
+          "ethereum/graphql",
           "ethereum/rpc-compat",
           "ethereum/sync"
         description: Comma-separated list of simulators to test .e.g ethereum/rpc-compat, ethereum/eest/consume-engine, ethereum/eest/consume-rlp
