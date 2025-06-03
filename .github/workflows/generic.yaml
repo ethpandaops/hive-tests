@@ -3,28 +3,11 @@ on:
   schedule:
     - cron: "15 02 * * *"
   workflow_dispatch:
-    # Note: We're limited to 10 inputs
     inputs:
       client:
         type: string
         default: '"go-ethereum","reth","nethermind","ethereumjs","nimbus-el","besu","erigon"'
         description: Comma-separated list of clients to test .e.g go-ethereum, besu, reth, nethermind, erigon, ethereumjs, nimbus-el
-      simulator:
-        type: string
-        default: >-
-          "devp2p",
-          "ethereum/consensus",
-          "ethereum/eest/consume-engine",
-          "ethereum/eest/consume-rlp",
-          "ethereum/engine",
-          "ethereum/graphql",
-          "ethereum/rpc-compat",
-          "ethereum/sync"
-        description: Comma-separated list of simulators to test .e.g ethereum/rpc-compat, ethereum/eest/consume-engine, ethereum/eest/consume-rlp
-      hive_version:
-        type: string
-        default: ethereum/hive@master
-        description: GitHub repository and tag for hive (repo@tag)
       client_versions:
         type: string
         default: |
@@ -38,6 +21,26 @@ on:
             "nimbusel": "status-im/nimbus-eth1@master"
           }
         description: 'JSON object containing client versions in format {"client": "repo@tag", ...}'
+      simulator:
+        type: string
+        default: >-
+          "devp2p",
+          "ethereum/consensus",
+          "ethereum/eest/consume-engine",
+          "ethereum/eest/consume-rlp",
+          "ethereum/engine",
+          "ethereum/graphql",
+          "ethereum/rpc-compat",
+          "ethereum/sync"
+        description: Comma-separated list of simulators to test .e.g ethereum/rpc-compat, ethereum/eest/consume-engine, ethereum/eest/consume-rlp
+      extra_flags:
+        type: string
+        default: ""
+        description: Additional flags to append to the hive command
+      hive_version:
+        type: string
+        default: ethereum/hive@master
+        description: GitHub repository and tag for hive (repo@tag)
 
 env:
   # Proxy
@@ -70,7 +73,7 @@ env:
     --sim.loglevel=3
   # Flags used for the ethereum/consensus simulator
   CONSENSUS_FLAGS: >-
-    --sim.limit=consensus/
+    --sim.loglevel=3
 
 jobs:
   prepare:
@@ -228,13 +231,12 @@ jobs:
           EOF
 
   test:
-    timeout-minutes: 1440 # 24 hours
+    timeout-minutes: 10080 # 7 days (due to --sim ethereum/consensus legacy-cancun tests)
     needs: prepare
     runs-on: >-
       ${{
         matrix.simulator == 'ethereum/consensus' && 'self-hosted-ghr-size-m-x64' ||
         matrix.simulator == 'ethereum/engine' && 'self-hosted-ghr-size-m-x64' ||
-        matrix.simulator == 'ethereum/rpc-compat' && 'ubuntu-latest' ||
         contains(matrix.simulator, 'ethereum/eest/') && 'self-hosted-ghr-size-m-x64' ||
         'ubuntu-latest'
       }}
@@ -255,11 +257,12 @@ jobs:
               "nimbus-el",
               "reth"
           '))}}
+        # If inputs.simulator is empty, use the default list of simulators.
+        # This is normally used for the scheduled workflow runs.
         simulator: >-
           ${{
             fromJSON(format('[{0}]', inputs.simulator || '
               "devp2p",
-              "ethereum/consensus",
               "ethereum/eest/consume-engine",
               "ethereum/eest/consume-rlp",
               "ethereum/engine",
@@ -293,6 +296,7 @@ jobs:
             ${{ matrix.simulator == 'ethereum/consensus' && env.CONSENSUS_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eest/consume-engine' && env.EEST_ENGINE_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eest/consume-rlp' && env.EEST_RLP_FLAGS || '' }}
+            ${{ inputs.extra_flags }}
           s3_upload: true
           s3_bucket: ${{ env.S3_BUCKET }}
           s3_path: ${{ env.S3_PATH }}
