@@ -18,7 +18,7 @@ jobs:
               workflow_id: 'generic.yaml',
               ref: 'master',
               inputs: {
-                simulator: 'ethereum/consensus',
+                simulator: '"ethereum/consensus"',
                 extra_flags: '--sim.limit=legacy/'
               }
             });
