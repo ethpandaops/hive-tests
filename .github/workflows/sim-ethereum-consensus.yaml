@@ -19,6 +19,7 @@ jobs:
               ref: 'master',
               inputs: {
                 simulator: '"ethereum/consensus"',
-                extra_flags: '--sim.limit=consensus/'
+                extra_flags: '--sim.limit=consensus/',
+                concurrency_group: 'consensus'
               }
             });

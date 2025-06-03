@@ -19,6 +19,7 @@ jobs:
               ref: 'master',
               inputs: {
                 simulator: '"ethereum/consensus"',
-                extra_flags: '--sim.limit=legacy-cancun/'
+                extra_flags: '--sim.limit=legacy-cancun/',
+                concurrency_group: 'legacy-cancun'
               }
             });

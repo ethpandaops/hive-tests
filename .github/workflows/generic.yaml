@@ -41,6 +41,10 @@ on:
         type: string
         default: ethereum/hive@master
         description: GitHub repository and tag for hive (repo@tag)
+      concurrency_group:
+        type: string
+        default: "default"
+        description: Concurrency group for the workflow
 
 env:
   # Proxy
@@ -242,7 +246,7 @@ jobs:
       }}
     concurrency:
       group: >-
-        ${{ github.head_ref || github.run_id }}-${{ matrix.client }}-${{ matrix.simulator }}
+        ${{ github.head_ref || inputs.concurrency_group }}-${{ matrix.client }}-${{ matrix.simulator }}
     strategy:
       fail-fast: false
       matrix:
