@@ -16,7 +16,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'generic.yaml',
-              ref: 'main',
+              ref: 'master',
               inputs: {
                 simulator: 'ethereum/consensus',
                 extra_flags: '--sim.limit=legacy/'
