@@ -20,6 +20,7 @@ jobs:
               inputs: {
                 simulator: '"ethereum/consensus"',
                 extra_flags: '--sim.limit=legacy/',
-                concurrency_group: 'legacy'
+                concurrency_group: 'legacy',
+                workflow_artifact_upload: 'false'
               }
             });

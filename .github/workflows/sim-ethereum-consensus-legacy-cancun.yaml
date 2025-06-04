@@ -20,6 +20,7 @@ jobs:
               inputs: {
                 simulator: '"ethereum/consensus"',
                 extra_flags: '--sim.limit=legacy-cancun/',
-                concurrency_group: 'legacy-cancun'
+                concurrency_group: 'legacy-cancun',
+                workflow_artifact_upload: 'false'
               }
             });

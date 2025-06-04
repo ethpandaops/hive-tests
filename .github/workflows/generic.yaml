@@ -45,6 +45,10 @@ on:
         type: string
         default: "default"
         description: Concurrency group for the workflow
+      workflow_artifact_upload:
+        description: 'Upload test results as an workflow artifact'
+        required: false
+        default: 'true'
 
 env:
   # Proxy
@@ -307,5 +311,5 @@ jobs:
           s3_public_url: ${{ env.S3_PUBLIC_URL }}
           rclone_config: ${{ secrets.HIVE_RCLONE_CONFIG }}
           rclone_version: ${{ env.INSTALL_RCLONE_VERSION }}
-          workflow_artifact_upload: true
+          workflow_artifact_upload: ${{ inputs.workflow_artifact_upload }}
           website_upload: true

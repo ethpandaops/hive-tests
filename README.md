@@ -35,7 +35,17 @@ The repository runs various test simulators including:
 
 ### Scheduled Runs
 
-Tests run automatically every day via GitHub Actions.
+Tests run automatically every day via GitHub Actions. See the [`generic.yaml` workflow](.github/workflows/generic.yaml) for more details.
+
+### Specialized Testing Workflows
+
+The repository includes additional specialized workflows that target specific consensus testing scenarios which take a long time to run. These workflows run on a different schedule:
+
+- **[`sim-ethereum-consensus.yaml`](.github/workflows/sim-ethereum-consensus.yaml)**: Runs consensus tests every 2 days at 01:10 UTC, focusing on current consensus protocol tests
+- **[`sim-ethereum-consensus-legacy.yaml`](.github/workflows/sim-ethereum-consensus-legacy.yaml)**: Runs legacy consensus tests every 4 days at 05:45 UTC, testing older protocol versions for backward compatibility
+- **[`sim-ethereum-consensus-legacy-cancun.yaml`](.github/workflows/sim-ethereum-consensus-legacy-cancun.yaml)**: Runs Cancun-specific legacy tests weekly on Fridays at 05:45 UTC
+
+These workflows are lightweight dispatchers that trigger the main [`generic.yaml`](.github/workflows/generic.yaml) workflow with specific parameters for targeted testing scenarios. They use different concurrency groups to avoid conflicts and can be manually triggered through the GitHub Actions interface. The `workflow_artifact_upload` parameter is set to `false` to avoid uploading test results as an workflow artifact due to the large size of the test results.
 
 ### Manual Execution
 
