@@ -6,8 +6,8 @@ on:
     inputs:
       client:
         type: string
-        default: '"go-ethereum","reth","nethermind","ethereumjs","nimbus-el","besu","erigon"'
-        description: Comma-separated list of clients to test .e.g go-ethereum, besu, reth, nethermind, erigon, ethereumjs, nimbus-el
+        default: '"go-ethereum","reth","nethermind","nimbus-el","besu","erigon"'
+        description: Comma-separated list of clients to test .e.g go-ethereum, besu, reth, nethermind, erigon, nimbus-el
       client_versions:
         type: string
         default: |
@@ -17,7 +17,6 @@ on:
             "reth": "paradigmxyz/reth@main",
             "nethermind": "NethermindEth/nethermind@master",
             "erigon": "erigontech/erigon@main",
-            "ethereumjs": "ethereumjs/ethereumjs-monorepo@master",
             "nimbusel": "status-im/nimbus-eth1@master"
           }
         description: 'JSON object containing client versions in format {"client": "repo@tag", ...}'
@@ -106,9 +105,6 @@ jobs:
       erigon_image: ${{ steps.parse.outputs.erigon_image }}
       erigon_tag: ${{ steps.parse.outputs.erigon_tag }}
       erigon_docker_image_tag: ${{ steps.parse.outputs.erigon_docker_image_tag }}
-      ethereumjs_repo: ${{ steps.parse.outputs.ethereumjs_repo }}
-      ethereumjs_tag: ${{ steps.parse.outputs.ethereumjs_tag }}
-      ethereumjs_docker_image_tag: ${{ steps.parse.outputs.ethereumjs_docker_image_tag }}
       nimbusel_repo: ${{ steps.parse.outputs.nimbusel_repo }}
       nimbusel_tag: ${{ steps.parse.outputs.nimbusel_tag }}
       nimbusel_docker_image_tag: ${{ steps.parse.outputs.nimbusel_docker_image_tag }}
@@ -123,7 +119,6 @@ jobs:
           RETH_DEFAULT="paradigmxyz/reth@main"
           NETHERMIND_DEFAULT="NethermindEth/nethermind@master"
           ERIGON_DEFAULT="erigontech/erigon@main"
-          ETHEREUMJS_DEFAULT="ethereumjs/ethereumjs-monorepo@master"
           NIMBUSEL_DEFAULT="status-im/nimbus-eth1@master"
           HIVE_DEFAULT="ethereum/hive@master"
 
@@ -135,7 +130,6 @@ jobs:
             RETH_VERSION=$(echo "$CLIENT_VERSIONS" | jq -r '.reth // "'"$RETH_DEFAULT"'"')
             NETHERMIND_VERSION=$(echo "$CLIENT_VERSIONS" | jq -r '.nethermind // "'"$NETHERMIND_DEFAULT"'"')
             ERIGON_VERSION=$(echo "$CLIENT_VERSIONS" | jq -r '.erigon // "'"$ERIGON_DEFAULT"'"')
-            ETHEREUMJS_VERSION=$(echo "$CLIENT_VERSIONS" | jq -r '.ethereumjs // "'"$ETHEREUMJS_DEFAULT"'"')
             NIMBUSEL_VERSION=$(echo "$CLIENT_VERSIONS" | jq -r '.nimbusel // "'"$NIMBUSEL_DEFAULT"'"')
           else
             GETH_VERSION="$GETH_DEFAULT"
@@ -143,7 +137,6 @@ jobs:
             RETH_VERSION="$RETH_DEFAULT"
             NETHERMIND_VERSION="$NETHERMIND_DEFAULT"
             ERIGON_VERSION="$ERIGON_DEFAULT"
-            ETHEREUMJS_VERSION="$ETHEREUMJS_DEFAULT"
             NIMBUSEL_VERSION="$NIMBUSEL_DEFAULT"
           fi
 
@@ -171,11 +164,6 @@ jobs:
           echo "erigon_repo=$(echo ${ERIGON_VERSION} | cut -d@ -f1)" >> $GITHUB_OUTPUT
           echo "erigon_tag=$(echo ${ERIGON_VERSION} | cut -d@ -f2)" >> $GITHUB_OUTPUT
           echo "erigon_docker_image_tag=$(echo ${ERIGON_VERSION} | sed 's/[@\/]/_/g' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
-
-          # Parse ethereumjs
-          echo "ethereumjs_repo=$(echo ${ETHEREUMJS_VERSION} | cut -d@ -f1)" >> $GITHUB_OUTPUT
-          echo "ethereumjs_tag=$(echo ${ETHEREUMJS_VERSION} | cut -d@ -f2)" >> $GITHUB_OUTPUT
-          echo "ethereumjs_docker_image_tag=$(echo ${ETHEREUMJS_VERSION} | sed 's/[@\/]/_/g' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
           # Parse nimbusel
           echo "nimbusel_repo=$(echo ${NIMBUSEL_VERSION} | cut -d@ -f1)" >> $GITHUB_OUTPUT
@@ -223,12 +211,6 @@ jobs:
               github: ${{ steps.parse.outputs.erigon_repo }}
               tag: ${{ steps.parse.outputs.erigon_tag }}
               GOPROXY: ${{ env.GOPROXY }}
-          - client: ethereumjs
-            nametag: default
-            dockerfile: git
-            build_args:
-              github: ${{ steps.parse.outputs.ethereumjs_repo }}
-              tag: ${{ steps.parse.outputs.ethereumjs_tag }}
           - client: nimbus-el
             nametag: default
             dockerfile: git
@@ -259,7 +241,6 @@ jobs:
             fromJSON(format('[{0}]', inputs.client || '
               "besu",
               "erigon",
-              "ethereumjs",
               "go-ethereum",
               "nethermind",
               "nimbus-el",
