@@ -6,8 +6,8 @@ on:
     inputs:
       client:
         type: string
-        default: '"go-ethereum","reth","nethermind","nimbus-el","besu","erigon"'
-        description: Comma-separated list of clients to test .e.g go-ethereum, besu, reth, nethermind, erigon, nimbus-el
+        default: '"go-ethereum","reth","nethermind","nimbus-el","besu","erigon","ethrex"'
+        description: Comma-separated list of clients to test .e.g go-ethereum, besu, reth, nethermind, erigon, nimbus-el, ethrex
       simulator:
         type: string
         default: >-
@@ -43,20 +43,22 @@ on:
             "nethermind": "NethermindEth/nethermind@master",
             "erigon": "erigontech/erigon@main",
             "nimbusel": "status-im/nimbus-eth1@master"
+            "ethrex": "lambdaclass/ethrex@main"
           }
         description: 'JSON object containing client versions in format {"client": "repo@tag", ...}'
       client_images:
-          type: string
-          default: |
-            {
-              "geth": "docker.ethquokkaops.io/dh/ethpandaops/geth:master",
-              "besu": "docker.ethquokkaops.io/dh/ethpandaops/besu:main",
-              "reth": "docker.ethquokkaops.io/dh/ethpandaops/reth:main",
-              "nethermind": "docker.ethquokkaops.io/dh/ethpandaops/nethermind:master",
-              "erigon": "docker.ethquokkaops.io/dh/ethpandaops/erigon:main",
-              "nimbusel": "docker.ethquokkaops.io/dh/ethpandaops/nimbus-eth1:master"
-            }
-          description: 'JSON object containing client docker images in format {"client": "registry:tag", ...}'
+        type: string
+        default: |
+          {
+            "geth": "docker.ethquokkaops.io/dh/ethpandaops/geth:master",
+            "besu": "docker.ethquokkaops.io/dh/ethpandaops/besu:main",
+            "reth": "docker.ethquokkaops.io/dh/ethpandaops/reth:main",
+            "nethermind": "docker.ethquokkaops.io/dh/ethpandaops/nethermind:master",
+            "erigon": "docker.ethquokkaops.io/dh/ethpandaops/erigon:main",
+            "nimbusel": "docker.ethquokkaops.io/dh/ethpandaops/nimbus-eth1:master",
+            "ethrex": "ghcr.io/lambdaclass/ethrex:main"
+          }
+        description: 'JSON object containing client docker images in format {"client": "registry:tag", ...}'
       extra_flags:
         type: string
         default: ""
@@ -66,9 +68,9 @@ on:
         default: "default"
         description: Concurrency group for the workflow
       workflow_artifact_upload:
-        description: 'Upload test results as an workflow artifact'
+        description: "Upload test results as an workflow artifact"
         required: false
-        default: 'true'
+        default: "true"
 
 env:
   # Proxy
@@ -130,17 +132,17 @@ jobs:
       # Scheduled runs
       - uses: ethpandaops/hive-github-action/helpers/client-config@a9ec89442df18ee579d3179b76c47f5f93954307 # v0.4.0
         if: github.event_name == 'schedule'
-        name: 'Client config: schedule'
+        name: "Client config: schedule"
         id: client_config_schedule
         with:
-          client_source: 'git'
-          hive_version: 'ethereum/hive@master'
+          client_source: "git"
+          hive_version: "ethereum/hive@master"
           goproxy: ${{ env.GOPROXY }}
 
       # Manual dispatch
       - uses: ethpandaops/hive-github-action/helpers/client-config@a9ec89442df18ee579d3179b76c47f5f93954307 # v0.4.0
         if: github.event_name == 'workflow_dispatch'
-        name: 'Client config: dispatch'
+        name: "Client config: dispatch"
         id: client_config_dispatch
         with:
           client_repos: ${{ inputs.client_repos }}
@@ -173,7 +175,8 @@ jobs:
               "go-ethereum",
               "nethermind",
               "nimbus-el",
-              "reth"
+              "reth",
+              "ethrex"
           '))}}
         # If inputs.simulator is empty, use the default list of simulators.
         # This is normally used for the scheduled workflow runs.

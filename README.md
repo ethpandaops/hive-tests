@@ -17,6 +17,7 @@ The following Ethereum execution clients are tested:
 - **[Erigon](https://github.com/ledgerwatch/erigon)** - High-performance Ethereum client
 - **[EthereumJS](https://github.com/ethereumjs/ethereumjs-monorepo)** - JavaScript implementation of Ethereum
 - **[Nimbus-EL](https://github.com/status-im/nimbus-eth1)** - Nim-based Ethereum execution layer client
+- **[Ethrex](https://github.com/lambdaclass/ethrex)** - Rust-based Ethereum client
 
 ## Test Simulators
 
