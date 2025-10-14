@@ -16,7 +16,6 @@ on:
           "ethereum/eest/consume-engine",
           "ethereum/eest/consume-rlp",
           "ethereum/engine",
-          "ethereum/graphql",
           "ethereum/rpc-compat",
         description: Comma-separated list of simulators to test .e.g ethereum/rpc-compat, ethereum/eest/consume-engine, ethereum/eest/consume-rlp
       hive_version:
@@ -186,7 +185,6 @@ jobs:
               "ethereum/eest/consume-engine",
               "ethereum/eest/consume-rlp",
               "ethereum/engine",
-              "ethereum/graphql",
               "ethereum/rpc-compat",
           '))}}
     steps:
