@@ -38,7 +38,7 @@ jobs:
     test:
         timeout-minutes: 240 # 4 hours
         needs: prepare
-        runs-on: ubuntu-latest
+        runs-on: [self-hosted-ghr-custom, size-l-x64]
         concurrency:
             group: hive-graphql-${{ matrix.client }}-${{ github.run_id }}
         strategy:
