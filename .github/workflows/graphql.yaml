@@ -1,7 +1,31 @@
 name: Hive - GraphQL
 on:
     schedule:
-        - cron: "15 03 * * *"
+        - cron: "15 04 * * *"
+    workflow_dispatch:
+        inputs:
+            client:
+                type: choice
+                description: Client to test (GraphQL only supported by Besu and Geth)
+                options:
+                    - besu
+                    - go-ethereum
+                default: besu
+            hive_version:
+                type: string
+                default: ethereum/hive@master
+                description: GitHub repository and tag for hive (repo@tag)
+            client_source:
+                type: choice
+                description: How client images should be sourced
+                options:
+                    - git
+                    - docker
+                default: git
+            extra_flags:
+                type: string
+                default: ""
+                description: Additional flags to append to the hive command
 
 env:
     GOPROXY: "${{ vars.GOPROXY }}"
@@ -21,13 +45,27 @@ jobs:
     prepare:
         runs-on: ubuntu-latest
         outputs:
-            hive_repo: ${{ steps.client_config_schedule.outputs.hive_repo }}
-            hive_tag: ${{ steps.client_config_schedule.outputs.hive_tag }}
-            client_config: ${{ steps.client_config_schedule.outputs.client_config }}
+            hive_repo: >-
+                ${{
+                  steps.client_config_schedule.outputs.hive_repo ||
+                  steps.client_config_dispatch.outputs.hive_repo
+                }}
+            hive_tag: >-
+                ${{
+                  steps.client_config_schedule.outputs.hive_tag ||
+                  steps.client_config_dispatch.outputs.hive_tag
+                }}
+            client_config: >-
+                ${{
+                  steps.client_config_schedule.outputs.client_config ||
+                  steps.client_config_dispatch.outputs.client_config
+                }}
         steps:
             - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
+            # Scheduled runs
             - uses: ethpandaops/hive-github-action/helpers/client-config@1aa8d73dad34de13afbb3113ab16c1a462d2fbc3 # v0.5.0
+              if: github.event_name == 'schedule'
               name: "Client config: schedule"
               id: client_config_schedule
               with:
@@ -35,19 +73,34 @@ jobs:
                   hive_version: "ethereum/hive@master"
                   goproxy: ${{ env.GOPROXY }}
 
+            # Manual dispatch
+            - uses: ethpandaops/hive-github-action/helpers/client-config@1aa8d73dad34de13afbb3113ab16c1a462d2fbc3 # v0.5.0
+              if: github.event_name == 'workflow_dispatch'
+              name: "Client config: dispatch"
+              id: client_config_dispatch
+              with:
+                  client_source: ${{ inputs.client_source }}
+                  hive_version: ${{ inputs.hive_version }}
+                  goproxy: ${{ env.GOPROXY }}
+
     test:
-        timeout-minutes: 240 # 4 hours
+        timeout-minutes: 240 # 4 hours (can change later)
         needs: prepare
         runs-on: [self-hosted-ghr-custom, size-l-x64]
         concurrency:
-            group: hive-graphql-${{ matrix.client }}-${{ github.run_id }}
+            group: >-
+                ${{
+                  github.event_name == 'workflow_dispatch' &&
+                  format('hive-graphql-{0}-{1}', inputs.client, github.run_id) ||
+                  format('hive-graphql-{0}-{1}', matrix.client, github.run_id)
+                }}
         strategy:
             fail-fast: false
             matrix:
                 # GraphQL is only supported by besu and go-ethereum
-                client:
-                    - besu
-                    - go-ethereum
+                # For scheduled runs, test both clients
+                # For manual dispatch, the matrix is ignored
+                client: ${{ github.event_name == 'schedule' && fromJSON('["besu","go-ethereum"]') || fromJSON('[""]') }}
         steps:
             - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
@@ -63,12 +116,13 @@ jobs:
               with:
                   hive_repository: ${{ needs.prepare.outputs.hive_repo }}
                   hive_version: ${{ needs.prepare.outputs.hive_tag }}
-                  client: ${{ matrix.client }}
+                  client: ${{ github.event_name == 'workflow_dispatch' && inputs.client || matrix.client }}
                   simulator: ethereum/graphql
                   client_config: ${{ needs.prepare.outputs.client_config }}
                   extra_flags: >-
                       ${{ env.GLOBAL_EXTRA_FLAGS }}
                       ${{ env.GRAPHQL_FLAGS }}
+                      ${{ inputs.extra_flags }}
                   s3_upload: true
                   s3_bucket: ${{ env.S3_BUCKET }}
                   s3_path: ${{ env.S3_PATH }}
