@@ -1,7 +1,5 @@
 name: Hive - Generic
 on:
-  schedule:
-    - cron: "15 02 * * *"
   workflow_dispatch:
     inputs:
       client:
@@ -109,42 +107,21 @@ env:
   # Flags used for the ethereum/consensus simulator
   CONSENSUS_FLAGS: >-
     --sim.loglevel=3
+  # Flags used for the ethereum/graphql simulator
+  GRAPHQL_FLAGS: >-
+    --sim.loglevel=3
 
 jobs:
   prepare:
     runs-on: ubuntu-latest
     outputs:
       # Hive version
-      hive_repo: >-
-        ${{
-          steps.client_config_schedule.outputs.hive_repo ||
-          steps.client_config_dispatch.outputs.hive_repo
-        }}
-      hive_tag: >-
-        ${{
-          steps.client_config_schedule.outputs.hive_tag ||
-          steps.client_config_dispatch.outputs.hive_tag
-        }}
+      hive_repo: ${{ steps.client_config_dispatch.outputs.hive_repo }}
+      hive_tag: ${{ steps.client_config_dispatch.outputs.hive_tag }}
       # client_config contains the YAML client config for Hive
-      client_config: >-
-        ${{
-          steps.client_config_schedule.outputs.client_config ||
-          steps.client_config_dispatch.outputs.client_config
-        }}
+      client_config: ${{ steps.client_config_dispatch.outputs.client_config }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      # Scheduled runs
-      - uses: ethpandaops/hive-github-action/helpers/client-config@1aa8d73dad34de13afbb3113ab16c1a462d2fbc3 # v0.5.0
-        if: github.event_name == 'schedule'
-        name: "Client config: schedule"
-        id: client_config_schedule
-        with:
-          client_source: "git"
-          hive_version: "ethereum/hive@master"
-          goproxy: ${{ env.GOPROXY }}
-
-      # Manual dispatch
       - uses: ethpandaops/hive-github-action/helpers/client-config@1aa8d73dad34de13afbb3113ab16c1a462d2fbc3 # v0.5.0
         if: github.event_name == 'workflow_dispatch'
         name: "Client config: dispatch"
@@ -157,7 +134,7 @@ jobs:
           goproxy: ${{ env.GOPROXY }}
 
   test:
-    timeout-minutes: ${{ inputs.timeout_minutes || 2880 }} # 48h default timeout
+    timeout-minutes: ${{ inputs.timeout_minutes }}
     needs: prepare
     runs-on: >-
       ${{
@@ -172,28 +149,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        client: >-
-          ${{
-            fromJSON(format('[{0}]', inputs.client || '
-              "besu",
-              "erigon",
-              "go-ethereum",
-              "nethermind",
-              "nimbus-el",
-              "reth",
-              "ethrex"
-          '))}}
-        # If inputs.simulator is empty, use the default list of simulators.
-        # This is normally used for the scheduled workflow runs.
-        simulator: >-
-          ${{
-            fromJSON(format('[{0}]', inputs.simulator || '
-              "devp2p",
-              "ethereum/eest/consume-engine",
-              "ethereum/eest/consume-rlp",
-              "ethereum/engine",
-              "ethereum/rpc-compat",
-          '))}}
+        client: ${{ fromJSON(format('[{0}]', inputs.client ))}}
+        simulator: ${{ fromJSON(format('[{0}]', inputs.simulator ))}}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
@@ -218,6 +175,7 @@ jobs:
             ${{ matrix.simulator == 'ethereum/consensus' && env.CONSENSUS_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eest/consume-engine' && env.EEST_ENGINE_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eest/consume-rlp' && env.EEST_RLP_FLAGS || '' }}
+            ${{ matrix.simulator == 'ethereum/graphql' && env.GRAPHQL_FLAGS || '' }}
             ${{ inputs.extra_flags }}
           s3_upload: true
           s3_bucket: ${{ env.S3_BUCKET }}

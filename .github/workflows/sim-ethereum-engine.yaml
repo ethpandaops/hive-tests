@@ -1,8 +1,8 @@
-name: ethereum/consensus (legacy)
+name: ethereum/engine (engine-auth,engine-exchange-capabilities,engine-withdrawals)
 on:
   workflow_dispatch:
   schedule:
-    - cron: "45 05 */4 * *" # Every 4th day at 05:45 UTC
+    - cron: "15 07 * * *" # Every day at 07:15 UTC
 
 jobs:
   trigger-generic:
@@ -18,10 +18,9 @@ jobs:
               workflow_id: 'generic.yaml',
               ref: 'master',
               inputs: {
-                simulator: '"ethereum/consensus"',
-                extra_flags: '--sim.limit=legacy/',
-                concurrency_group: 'legacy',
-                timeout_minutes: 10080,
+                simulator: '"ethereum/engine"',
+                concurrency_group: 'engine',
+                timeout_minutes: 180,
                 workflow_artifact_upload: 'false'
               }
             });
