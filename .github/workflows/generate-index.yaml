@@ -1,0 +1,41 @@
+name: Hive - Generate Results Index
+
+on:
+  schedule:
+    - cron: '0 */3 * * *'  # Every 3 hours
+  workflow_dispatch:
+    inputs:
+      s3-bucket:
+        description: 'S3 bucket to use'
+        required: false
+        default: 'hive-results'
+        type: string
+      s3-path:
+        description: 'Path to the reports in S3 bucket'
+        required: false
+        default: 'generic'
+        type: string
+
+env:
+  INSTALL_RCLONE_VERSION: v1.68.2
+
+jobs:
+  generate-index:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: "generate-index-${{ inputs.s3-bucket || 'hive-results' }}-${{ inputs.s3-path || 'generic' }}"
+      cancel-in-progress: true
+
+    steps:
+    - name: Run Index Generator
+      uses: ethpandaops/hive-github-action@master # v0.6.0-unreleased
+      with:
+        skip_tests: true
+        s3_upload: true
+        s3_bucket: ${{ inputs.s3-bucket || 'hive-results' }}
+        s3_path: ${{ inputs.s3-path || 'generic' }}
+        rclone_config: ${{ secrets.HIVE_RCLONE_CONFIG }}
+        rclone_version: ${{ env.INSTALL_RCLONE_VERSION }}
+        website_upload: false
+        website_listing_limit: '3000'
+        website_index_generation: true
