@@ -71,6 +71,11 @@ on:
         description: "Upload test results as an workflow artifact"
         required: false
         default: "true"
+      timeout_minutes:
+        type: number
+        default: 2880
+        description: "Timeout in minutes for the test job (default: 2880 = 2 days)"
+
 
 env:
   # Proxy
@@ -152,7 +157,7 @@ jobs:
           goproxy: ${{ env.GOPROXY }}
 
   test:
-    timeout-minutes: 10080 # 7 days (due to --sim ethereum/consensus legacy-cancun tests)
+    timeout-minutes: ${{ inputs.timeout_minutes || 2880 }} # 48h default timeout
     needs: prepare
     runs-on: >-
       ${{
