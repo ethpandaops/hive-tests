@@ -45,6 +45,7 @@ The repository includes additional specialized workflows that target specific co
 - **[`sim-ethereum-consensus.yaml`](.github/workflows/sim-ethereum-consensus.yaml)**: Runs consensus tests every 2 days at 01:10 UTC, focusing on current consensus protocol tests
 - **[`sim-ethereum-consensus-legacy.yaml`](.github/workflows/sim-ethereum-consensus-legacy.yaml)**: Runs legacy consensus tests every 4 days at 05:45 UTC, testing older protocol versions for backward compatibility
 - **[`sim-ethereum-consensus-legacy-cancun.yaml`](.github/workflows/sim-ethereum-consensus-legacy-cancun.yaml)**: Runs Cancun-specific legacy tests weekly on Fridays at 05:45 UTC
+- **[`sim-ethereum-graphql.yaml`](.github/workflows/sim-ethereum-graphql.yaml)**: Runs GraphQL tests every day at 04:15 UTC, testing GraphQL support for the clients
 
 These workflows are lightweight dispatchers that trigger the main [`generic.yaml`](.github/workflows/generic.yaml) workflow with specific parameters for targeted testing scenarios. They use different concurrency groups to avoid conflicts and can be manually triggered through the GitHub Actions interface. The `workflow_artifact_upload` parameter is set to `false` to avoid uploading test results as an workflow artifact due to the large size of the test results.
 
@@ -57,6 +58,8 @@ You can manually trigger test runs through the GitHub Actions interface with cus
 - **Version Control**: Specify custom versions/branches for Hive and each client
 
 ## Test Results
+
+There's a index workflow that runs periodically and generates a index of the test results and uploads it to the S3 bucket. See the [`generate-index.yaml`](.github/workflows/generate-index.yaml) workflow for more details.
 
 Test results are automatically uploaded to:
 

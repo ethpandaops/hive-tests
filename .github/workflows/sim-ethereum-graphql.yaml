@@ -1,0 +1,26 @@
+name: ethereum/graphql (graphql)
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 04 * * *" # Every day at 04:15 UTC
+
+jobs:
+  trigger-generic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'generic.yaml',
+              ref: 'master',
+              inputs: {
+                simulator: '"ethereum/graphql"',
+                client: '"go-ethereum","besu"',
+                concurrency_group: 'graphql',
+                workflow_artifact_upload: 'false'
+              }
+            });
