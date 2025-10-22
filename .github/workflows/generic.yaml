@@ -42,7 +42,7 @@ on:
             "reth": "paradigmxyz/reth@main",
             "nethermind": "NethermindEth/nethermind@master",
             "erigon": "erigontech/erigon@main",
-            "nimbusel": "status-im/nimbus-eth1@master"
+            "nimbusel": "status-im/nimbus-eth1@master",
             "ethrex": "lambdaclass/ethrex@main"
           }
         description: 'JSON object containing client versions in format {"client": "repo@tag", ...}'
