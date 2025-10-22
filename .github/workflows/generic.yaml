@@ -32,6 +32,7 @@ on:
         options:
           - docker
           - git
+        default: git
       client_repos:
         type: string
         default: |
