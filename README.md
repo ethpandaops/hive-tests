@@ -23,8 +23,8 @@ The following Ethereum execution clients are tested:
 
 The repository runs various test simulators including:
 
-- **[ethereum/eest/consume-engine](https://github.com/ethereum/hive/tree/master/simulators/ethereum/eest/consume-engine)**
-- **[ethereum/eest/consume-rlp](https://github.com/ethereum/hive/tree/master/simulators/ethereum/eest/consume-rlp)**
+- **[ethereum/eels/consume-engine](https://github.com/ethereum/hive/tree/master/simulators/ethereum/eels/consume-engine)**
+- **[ethereum/eels/consume-rlp](https://github.com/ethereum/hive/tree/master/simulators/ethereum/eels/consume-rlp)**
 - **[ethereum/rpc-compat](https://github.com/ethereum/hive/tree/master/simulators/ethereum/rpc-compat)**
 - **[ethereum/consensus](https://github.com/ethereum/hive/tree/master/simulators/ethereum/consensus)**
 - **[ethereum/engine](https://github.com/ethereum/hive/tree/master/simulators/ethereum/engine)**
@@ -47,8 +47,8 @@ The repository includes additional specialized workflows that target specific co
 - **[`sim-ethereum-consensus-legacy-cancun.yaml`](.github/workflows/sim-ethereum-consensus-legacy-cancun.yaml)**
 - **[`sim-ethereum-graphql.yaml`](.github/workflows/sim-ethereum-graphql.yaml)**
 - **[`sim-ethereum-engine.yaml`](.github/workflows/sim-ethereum-engine.yaml)**
-- **[`sim-ethereum-eest-consume-engine.yaml`](.github/workflows/sim-ethereum-eest-consume-engine.yaml)**
-- **[`sim-ethereum-eest-consume-rlp.yaml`](.github/workflows/sim-ethereum-eest-consume-rlp.yaml)**
+- **[`sim-ethereum-eels-consume-engine.yaml`](.github/workflows/sim-ethereum-eels-consume-engine.yaml)**
+- **[`sim-ethereum-eels-consume-rlp.yaml`](.github/workflows/sim-ethereum-eels-consume-rlp.yaml)**
 - **[`sim-ethereum-rpc-compat.yaml`](.github/workflows/sim-ethereum-rpc-compat.yaml)**
 - **[`sim-devp2p.yaml`](.github/workflows/sim-devp2p.yaml)**
 
@@ -81,7 +81,7 @@ The workflow supports testing different versions of clients by specifying reposi
 Tests run on a combination of:
 
 - GitHub-hosted runners for lighter test suites
-- Self-hosted runners for resource-intensive tests (consensus, engine, EEST simulators)
+- Self-hosted runners for resource-intensive tests (consensus, engine, eels simulators)
 
 ## License
 
