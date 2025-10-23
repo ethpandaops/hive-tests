@@ -20,7 +20,7 @@ jobs:
               inputs: {
                 simulator: '"devp2p"',
                 concurrency_group: 'devp2p',
-                timeout_minutes: 60,
+                timeout_minutes: '60',
                 workflow_artifact_upload: 'false'
               }
             });

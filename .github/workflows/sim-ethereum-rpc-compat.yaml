@@ -20,7 +20,7 @@ jobs:
               inputs: {
                 simulator: '"ethereum/rpc-compat"',
                 concurrency_group: 'rpc-compat',
-                timeout_minutes: 60,
+                timeout_minutes: '60',
                 workflow_artifact_upload: 'false'
               }
             });
