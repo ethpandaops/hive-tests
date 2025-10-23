@@ -21,7 +21,7 @@ env:
 
 jobs:
   generate-index:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted-ghr-size-ccx33-x64
     concurrency:
       group: "generate-index-${{ inputs.s3-bucket || 'hive-results' }}-${{ inputs.s3-path || 'generic' }}"
       cancel-in-progress: true
