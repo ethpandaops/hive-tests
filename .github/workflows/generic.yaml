@@ -70,8 +70,8 @@ on:
         required: false
         default: "true"
       timeout_minutes:
-        type: number
-        default: 2880
+        type: string
+        default: "2880"
         description: "Timeout in minutes for the test job (default: 2880 = 2 days)"
 
 
@@ -134,7 +134,7 @@ jobs:
           goproxy: ${{ env.GOPROXY }}
 
   test:
-    timeout-minutes: ${{ inputs.timeout_minutes }}
+    timeout-minutes: ${{ fromJSON(inputs.timeout_minutes) }}
     needs: prepare
     runs-on: >-
       ${{
