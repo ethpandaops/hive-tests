@@ -21,7 +21,7 @@ jobs:
                 simulator: '"ethereum/consensus"',
                 extra_flags: '--sim.limit=legacy/',
                 concurrency_group: 'legacy',
-                timeout_minutes: 10080,
+                timeout_minutes: '10080',
                 workflow_artifact_upload: 'false'
               }
             });

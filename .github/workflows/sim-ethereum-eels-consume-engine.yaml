@@ -20,7 +20,7 @@ jobs:
               inputs: {
                 simulator: '"ethereum/eels/consume-engine"',
                 concurrency_group: 'eels-consume-engine',
-                timeout_minutes: 1680,
+                timeout_minutes: '1680',
                 workflow_artifact_upload: 'false'
               }
             });

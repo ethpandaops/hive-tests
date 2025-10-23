@@ -20,7 +20,7 @@ jobs:
               inputs: {
                 simulator: '"ethereum/engine"',
                 concurrency_group: 'engine',
-                timeout_minutes: 180,
+                timeout_minutes: '180',
                 workflow_artifact_upload: 'false'
               }
             });

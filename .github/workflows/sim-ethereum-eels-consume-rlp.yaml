@@ -20,7 +20,7 @@ jobs:
               inputs: {
                 simulator: '"ethereum/eels/consume-rlp"',
                 concurrency_group: 'eels-consume-rlp',
-                timeout_minutes: 2880,
+                timeout_minutes: '2880',
                 workflow_artifact_upload: 'false'
               }
             });
