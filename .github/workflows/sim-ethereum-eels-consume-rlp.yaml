@@ -1,4 +1,4 @@
-name: ethereum/eest/consume-rlp (eest/consume-rlp)
+name: ethereum/eels/consume-rlp (eels/consume-rlp)
 on:
   workflow_dispatch:
   schedule:
@@ -18,8 +18,8 @@ jobs:
               workflow_id: 'generic.yaml',
               ref: 'master',
               inputs: {
-                simulator: '"ethereum/eest/consume-rlp"',
-                concurrency_group: 'eest-consume-rlp',
+                simulator: '"ethereum/eels/consume-rlp"',
+                concurrency_group: 'eels-consume-rlp',
                 timeout_minutes: 2880,
                 workflow_artifact_upload: 'false'
               }

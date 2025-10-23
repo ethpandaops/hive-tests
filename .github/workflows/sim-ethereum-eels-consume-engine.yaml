@@ -1,4 +1,4 @@
-name: ethereum/eest/consume-engine (eest/consume-engine)
+name: ethereum/eels/consume-engine (eels/consume-engine)
 on:
   workflow_dispatch:
   schedule:
@@ -18,8 +18,8 @@ jobs:
               workflow_id: 'generic.yaml',
               ref: 'master',
               inputs: {
-                simulator: '"ethereum/eest/consume-engine"',
-                concurrency_group: 'eest-consume-engine',
+                simulator: '"ethereum/eels/consume-engine"',
+                concurrency_group: 'eels-consume-engine',
                 timeout_minutes: 1680,
                 workflow_artifact_upload: 'false'
               }
