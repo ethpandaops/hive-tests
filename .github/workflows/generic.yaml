@@ -6,6 +6,13 @@ on:
         type: string
         default: '["go-ethereum","reth","nethermind","nimbus-el","besu","erigon","ethrex"]'
         description: JSON array of clients to test .e.g go-ethereum, besu, reth, nethermind, erigon, nimbus-el, ethrex
+      client_matrix:
+        type: choice
+        options:
+          - "true"
+          - "false"
+        default: "true"
+        description: If "true", run each client in a separate matrix job. If "false", run all clients together in a single job.
       simulator:
         type: string
         default: >-
@@ -148,7 +155,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        client: ${{ fromJSON(inputs.client)}}
+        client: >-
+          ${{
+            inputs.client_matrix == 'true' && fromJSON(inputs.client) ||
+            fromJSON(format('["{0}"]', join(fromJSON(inputs.client), '-')))
+          }}
         simulator: ${{ fromJSON(inputs.simulator)}}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -165,7 +176,7 @@ jobs:
         with:
           hive_repository: ${{ needs.prepare.outputs.hive_repo }}
           hive_version: ${{ needs.prepare.outputs.hive_tag }}
-          client: ${{ matrix.client }}
+          client: ${{ inputs.client_matrix == 'true' && matrix.client || join(fromJSON(inputs.client), ',') }}
           simulator: ${{ matrix.simulator }}
           client_config: ${{ needs.prepare.outputs.client_config }}
           extra_flags: >-
