@@ -18,9 +18,8 @@ jobs:
               workflow_id: 'generic.yaml',
               ref: 'master',
               inputs: {
-                simulator: '"devp2p"',
+                simulator: '["devp2p"]',
                 concurrency_group: 'devp2p',
-                timeout_minutes: '60',
-                workflow_artifact_upload: 'false'
+                timeout_minutes: '60'
               }
             });

@@ -1,8 +1,8 @@
-name: ethereum/engine (engine-auth,engine-exchange-capabilities,engine-withdrawals)
+name: ethereum/sync (sync)
 on:
   workflow_dispatch:
   schedule:
-    - cron: "15 07 * * *" # Every day at 07:15 UTC
+    - cron: "15 01 * * *" # Every day at 01:15 UTC
 
 jobs:
   trigger-generic:
@@ -18,8 +18,10 @@ jobs:
               workflow_id: 'generic.yaml',
               ref: 'master',
               inputs: {
-                simulator: '["ethereum/engine"]',
-                concurrency_group: 'engine',
-                timeout_minutes: '180'
+                simulator: '["ethereum/sync"]',
+                client: '["go-ethereum","besu","reth","nethermind","erigon","nimbus-el","ethrex"]',
+                client_matrix: 'false',
+                concurrency_group: 'sync',
+                timeout_minutes: '120'
               }
             });

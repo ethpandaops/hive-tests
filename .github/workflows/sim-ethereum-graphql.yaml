@@ -18,10 +18,9 @@ jobs:
               workflow_id: 'generic.yaml',
               ref: 'master',
               inputs: {
-                simulator: '"ethereum/graphql"',
-                client: '"go-ethereum","besu"',
+                simulator: '["ethereum/graphql"]',
+                client: '["go-ethereum","besu"]',
                 concurrency_group: 'graphql',
-                timeout_minutes: '60',
-                workflow_artifact_upload: 'false'
+                timeout_minutes: '60'
               }
             });

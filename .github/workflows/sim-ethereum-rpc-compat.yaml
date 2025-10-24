@@ -18,9 +18,8 @@ jobs:
               workflow_id: 'generic.yaml',
               ref: 'master',
               inputs: {
-                simulator: '"ethereum/rpc-compat"',
+                simulator: '["ethereum/rpc-compat"]',
                 concurrency_group: 'rpc-compat',
-                timeout_minutes: '60',
-                workflow_artifact_upload: 'false'
+                timeout_minutes: '60'
               }
             });
