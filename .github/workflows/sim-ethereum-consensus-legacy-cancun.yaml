@@ -18,10 +18,9 @@ jobs:
               workflow_id: 'generic.yaml',
               ref: 'master',
               inputs: {
-                simulator: '"ethereum/consensus"',
+                simulator: '["ethereum/consensus"]',
                 extra_flags: '--sim.limit=legacy-cancun/',
                 concurrency_group: 'legacy-cancun',
-                timeout_minutes: '10080',
-                workflow_artifact_upload: 'false'
+                timeout_minutes: '10080'
               }
             });

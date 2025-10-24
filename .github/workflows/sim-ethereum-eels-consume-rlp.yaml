@@ -18,9 +18,8 @@ jobs:
               workflow_id: 'generic.yaml',
               ref: 'master',
               inputs: {
-                simulator: '"ethereum/eels/consume-rlp"',
+                simulator: '["ethereum/eels/consume-rlp"]',
                 concurrency_group: 'eels-consume-rlp',
-                timeout_minutes: '2880',
-                workflow_artifact_upload: 'false'
+                timeout_minutes: '2880'
               }
             });
