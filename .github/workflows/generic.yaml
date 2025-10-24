@@ -133,8 +133,8 @@ jobs:
         name: "Client config"
         id: client_config
         with:
-          client_repos: ${{ fromJSON(inputs.client_config).repos }}
-          client_images: ${{ fromJSON(inputs.client_config).images }}
+          client_repos: "${{ fromJSON(inputs.client_config).repos }}"
+          client_images: "${{ fromJSON(inputs.client_config).images }}"
           client_source: ${{ inputs.client_source }}
           hive_version: ${{ inputs.hive_version }}
           goproxy: ${{ env.GOPROXY }}
