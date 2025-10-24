@@ -27,38 +27,36 @@ on:
         type: choice
         description: >-
           How client images should be sourced.
-          'git' will use the github repo and tag (See client_repos).
-          'docker' will use the docker registry and tag (See client_images).
+          'git' will use the github repo and tag (See client_config repos).
+          'docker' will use the docker registry and tag (See client_config images).
         options:
           - docker
           - git
         default: git
-      client_repos:
+      client_config:
         type: string
         default: |
           {
-            "geth": "ethereum/go-ethereum@master",
-            "besu": "hyperledger/besu@main",
-            "reth": "paradigmxyz/reth@main",
-            "nethermind": "NethermindEth/nethermind@master",
-            "erigon": "erigontech/erigon@main",
-            "nimbusel": "status-im/nimbus-eth1@master",
-            "ethrex": "lambdaclass/ethrex@main"
+            "repos": {
+              "geth": "ethereum/go-ethereum@master",
+              "besu": "hyperledger/besu@main",
+              "reth": "paradigmxyz/reth@main",
+              "nethermind": "NethermindEth/nethermind@master",
+              "erigon": "erigontech/erigon@main",
+              "nimbusel": "status-im/nimbus-eth1@master",
+              "ethrex": "lambdaclass/ethrex@main"
+            },
+            "images": {
+              "geth": "docker.ethquokkaops.io/dh/ethpandaops/geth:master",
+              "besu": "docker.ethquokkaops.io/dh/ethpandaops/besu:main",
+              "reth": "docker.ethquokkaops.io/dh/ethpandaops/reth:main",
+              "nethermind": "docker.ethquokkaops.io/dh/ethpandaops/nethermind:master",
+              "erigon": "docker.ethquokkaops.io/dh/ethpandaops/erigon:main",
+              "nimbusel": "docker.ethquokkaops.io/dh/ethpandaops/nimbus-eth1:master",
+              "ethrex": "ghcr.io/lambdaclass/ethrex:main"
+            }
           }
-        description: 'JSON object containing client versions in format {"client": "repo@tag", ...}'
-      client_images:
-        type: string
-        default: |
-          {
-            "geth": "docker.ethquokkaops.io/dh/ethpandaops/geth:master",
-            "besu": "docker.ethquokkaops.io/dh/ethpandaops/besu:main",
-            "reth": "docker.ethquokkaops.io/dh/ethpandaops/reth:main",
-            "nethermind": "docker.ethquokkaops.io/dh/ethpandaops/nethermind:master",
-            "erigon": "docker.ethquokkaops.io/dh/ethpandaops/erigon:main",
-            "nimbusel": "docker.ethquokkaops.io/dh/ethpandaops/nimbus-eth1:master",
-            "ethrex": "ghcr.io/lambdaclass/ethrex:main"
-          }
-        description: 'JSON object containing client docker images in format {"client": "registry:tag", ...}'
+        description: 'JSON object containing client configuration with "repos" and "images" objects for git and docker sources respectively'
       extra_flags:
         type: string
         default: ""
@@ -118,19 +116,18 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       # Hive version
-      hive_repo: ${{ steps.client_config_dispatch.outputs.hive_repo }}
-      hive_tag: ${{ steps.client_config_dispatch.outputs.hive_tag }}
+      hive_repo: ${{ steps.client_config.outputs.hive_repo }}
+      hive_tag: ${{ steps.client_config.outputs.hive_tag }}
       # client_config contains the YAML client config for Hive
-      client_config: ${{ steps.client_config_dispatch.outputs.client_config }}
+      client_config: ${{ steps.client_config.outputs.client_config }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: ethpandaops/hive-github-action/helpers/client-config@1aa8d73dad34de13afbb3113ab16c1a462d2fbc3 # v0.5.0
-        if: github.event_name == 'workflow_dispatch'
-        name: "Client config: dispatch"
-        id: client_config_dispatch
+        name: "Client config"
+        id: client_config
         with:
-          client_repos: ${{ inputs.client_repos }}
-          client_images: ${{ inputs.client_images }}
+          client_repos: ${{ fromJSON(inputs.client_config).repos }}
+          client_images: ${{ fromJSON(inputs.client_config).images }}
           client_source: ${{ inputs.client_source }}
           hive_version: ${{ inputs.hive_version }}
           goproxy: ${{ env.GOPROXY }}
