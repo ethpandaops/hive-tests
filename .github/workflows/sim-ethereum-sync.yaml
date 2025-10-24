@@ -1,4 +1,4 @@
-name: ethereum/sync (sync)
+name: ethereum/sync (sync,snapsync)
 on:
   workflow_dispatch:
   schedule:
