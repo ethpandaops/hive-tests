@@ -146,6 +146,7 @@ jobs:
       ${{
         matrix.simulator == 'ethereum/consensus' && 'self-hosted-ghr-size-m-x64' ||
         matrix.simulator == 'ethereum/engine' && 'self-hosted-ghr-size-m-x64' ||
+        matrix.simulator == 'ethereum/sync' && 'self-hosted-ghr-size-xl-x64' ||
         contains(matrix.simulator, 'ethereum/eels/') && 'self-hosted-ghr-size-ccx33-x64' ||
         'ubuntu-latest'
       }}
