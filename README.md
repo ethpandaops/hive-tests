@@ -10,27 +10,27 @@ Hive Tests runs comprehensive compatibility and conformance tests across multipl
 
 The following Ethereum execution clients are tested:
 
-- **[go-ethereum](https://github.com/ethereum/go-ethereum)** (Geth) - The Go implementation of Ethereum
 - **[Besu](https://github.com/hyperledger/besu)** - Enterprise-grade Java Ethereum client
-- **[Reth](https://github.com/paradigmxyz/reth)** - Rust-based Ethereum execution client
-- **[Nethermind](https://github.com/NethermindEth/nethermind)** - .NET Ethereum client
 - **[Erigon](https://github.com/ledgerwatch/erigon)** - High-performance Ethereum client
 - **[EthereumJS](https://github.com/ethereumjs/ethereumjs-monorepo)** - JavaScript implementation of Ethereum
-- **[Nimbus-EL](https://github.com/status-im/nimbus-eth1)** - Nim-based Ethereum execution layer client
 - **[Ethrex](https://github.com/lambdaclass/ethrex)** - Rust-based Ethereum client
+- **[go-ethereum](https://github.com/ethereum/go-ethereum)** (Geth) - The Go implementation of Ethereum
+- **[Nethermind](https://github.com/NethermindEth/nethermind)** - .NET Ethereum client
+- **[Nimbus-EL](https://github.com/status-im/nimbus-eth1)** - Nim-based Ethereum execution layer client
+- **[Reth](https://github.com/paradigmxyz/reth)** - Rust-based Ethereum execution client
 
 ## Test Simulators
 
 The repository runs various test simulators including:
 
+- **[devp2p](https://github.com/ethereum/hive/tree/master/simulators/devp2p)**
+- **[ethereum/consensus](https://github.com/ethereum/hive/tree/master/simulators/ethereum/consensus)**
 - **[ethereum/eels/consume-engine](https://github.com/ethereum/hive/tree/master/simulators/ethereum/eels/consume-engine)**
 - **[ethereum/eels/consume-rlp](https://github.com/ethereum/hive/tree/master/simulators/ethereum/eels/consume-rlp)**
-- **[ethereum/rpc-compat](https://github.com/ethereum/hive/tree/master/simulators/ethereum/rpc-compat)**
-- **[ethereum/consensus](https://github.com/ethereum/hive/tree/master/simulators/ethereum/consensus)**
 - **[ethereum/engine](https://github.com/ethereum/hive/tree/master/simulators/ethereum/engine)**
-- **[ethereum/sync](https://github.com/ethereum/hive/tree/master/simulators/ethereum/sync)**
 - **[ethereum/graphql](https://github.com/ethereum/hive/tree/master/simulators/ethereum/graphql)**
-- **[devp2p](https://github.com/ethereum/hive/tree/master/simulators/devp2p)**
+- **[ethereum/rpc-compat](https://github.com/ethereum/hive/tree/master/simulators/ethereum/rpc-compat)**
+- **[ethereum/sync](https://github.com/ethereum/hive/tree/master/simulators/ethereum/sync)**
 
 ## Automation
 
@@ -42,17 +42,19 @@ Tests run via GitHub Actions. See the [`generic.yaml` workflow](.github/workflow
 
 The repository includes additional specialized workflows that target specific consensus testing scenarios which take a long time to run. These workflows run on a different schedules and have different timeouts:
 
-- **[`sim-ethereum-consensus.yaml`](.github/workflows/sim-ethereum-consensus.yaml)**
-- **[`sim-ethereum-consensus-legacy.yaml`](.github/workflows/sim-ethereum-consensus-legacy.yaml)**
+- **[`sim-devp2p.yaml`](.github/workflows/sim-devp2p.yaml)**
 - **[`sim-ethereum-consensus-legacy-cancun.yaml`](.github/workflows/sim-ethereum-consensus-legacy-cancun.yaml)**
-- **[`sim-ethereum-graphql.yaml`](.github/workflows/sim-ethereum-graphql.yaml)**
-- **[`sim-ethereum-engine.yaml`](.github/workflows/sim-ethereum-engine.yaml)**
+- **[`sim-ethereum-consensus-legacy.yaml`](.github/workflows/sim-ethereum-consensus-legacy.yaml)**
+- **[`sim-ethereum-consensus.yaml`](.github/workflows/sim-ethereum-consensus.yaml)**
 - **[`sim-ethereum-eels-consume-engine.yaml`](.github/workflows/sim-ethereum-eels-consume-engine.yaml)**
 - **[`sim-ethereum-eels-consume-rlp.yaml`](.github/workflows/sim-ethereum-eels-consume-rlp.yaml)**
+- **[`sim-ethereum-engine.yaml`](.github/workflows/sim-ethereum-engine.yaml)**
+- **[`sim-ethereum-graphql.yaml`](.github/workflows/sim-ethereum-graphql.yaml)**
 - **[`sim-ethereum-rpc-compat.yaml`](.github/workflows/sim-ethereum-rpc-compat.yaml)**
-- **[`sim-devp2p.yaml`](.github/workflows/sim-devp2p.yaml)**
+- **[`sim-ethereum-sync.yaml`](.github/workflows/sim-ethereum-sync.yaml)**
 
-These workflows are lightweight dispatchers that trigger the main [`generic.yaml`](.github/workflows/generic.yaml) workflow with specific parameters for targeted testing scenarios. They use different concurrency groups to avoid conflicts and can be manually triggered through the GitHub Actions interface. The `workflow_artifact_upload` parameter is set to `false` to avoid uploading test results as an workflow artifact due to the large size of the test results.
+
+These workflows are lightweight dispatchers that trigger the main [`generic.yaml`](.github/workflows/generic.yaml) workflow with specific parameters for targeted testing scenarios. They use different concurrency groups to avoid conflicts and can be manually triggered through the GitHub Actions interface.
 
 ### Manual Execution
 
