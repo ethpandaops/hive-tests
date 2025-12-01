@@ -1,4 +1,4 @@
-name: devp2p (devp2p)
+name: devp2p (devp2p,discv4,discv5)
 on:
   workflow_dispatch:
   schedule:
