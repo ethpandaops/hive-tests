@@ -166,6 +166,8 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Update iptabes
         run: sudo apt-get update && sudo apt-get install iptables
+      - name: Test docker network creation
+        run: docker network create somenetwork
       - uses: ethpandaops/actions/docker-login@a91b7a8dd6a264f5e845ac2aa52d2d6f24e6d01d
         with:
           username: ethpandaops
