@@ -22,6 +22,6 @@ jobs:
                 client: '["go-ethereum","besu","reth","nethermind","erigon","nimbus-el","ethrex"]',
                 client_matrix: 'false',
                 concurrency_group: 'sync',
-                timeout_minutes: '120'
+                timeout_minutes: '300'
               }
             });
