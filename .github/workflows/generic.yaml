@@ -170,10 +170,10 @@ jobs:
           username: ethpandaops
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - uses: ethpandaops/hive-github-action/helpers/self-hosted-runner-dependencies@1aa8d73dad34de13afbb3113ab16c1a462d2fbc3 # v0.5.0
+      - uses: ethpandaops/hive-github-action/helpers/self-hosted-runner-dependencies@6309eadf8ded1d967e7033d3de875d8313bb09b3 # v0.6.2
         if: runner.environment != 'github-hosted'
 
-      - uses: ethpandaops/hive-github-action@master # v0.6.0-unreleased
+      - uses: ethpandaops/hive-github-action@master # v0.6.x-unreleased
         with:
           hive_repository: ${{ needs.prepare.outputs.hive_repo }}
           hive_version: ${{ needs.prepare.outputs.hive_tag }}
