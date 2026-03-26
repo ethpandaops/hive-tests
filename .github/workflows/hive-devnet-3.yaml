@@ -82,12 +82,16 @@ env:
     --sim.parallelism=6
     --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
+    --sim.limit='.*fork_(Amsterdam|BPO2ToAmsterdamAtTime15k|Osaka).*'
+    --sim.limit.exact=false
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-rlp simulator
   EELS_RLP_FLAGS: >-
     --sim.parallelism=6
     --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
+    --sim.limit='.*fork_(Amsterdam|BPO2ToAmsterdamAtTime15k|Osaka).*'
+    --sim.limit.exact=false
     --sim.loglevel=3
   # Flags used for the ethereum/eels/execute simulator
   EELS_EXECUTE_FLAGS: >-
