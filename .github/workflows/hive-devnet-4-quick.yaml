@@ -10,7 +10,7 @@ on:
         description: Comma-separated list of clients to test .e.g go-ethereum, besu, reth, nethermind, erigon, nimbus-el, ethrex
       simulator:
         type: string
-        # TODO: add back "ethereum/eels/consume-rlp" when clients have bal-devnet-3 branch
+        # TODO: add back "ethereum/eels/consume-rlp" when clients have bal-devnet-4 branch
         default: >-
           "ethereum/eels/consume-engine"
         description: >-
@@ -34,7 +34,7 @@ on:
         type: string
         description: >-
           If provided, this tag will be used for all clients, overriding individual tags/branches in client_repos and client_images
-        default: "bal-devnet-3"
+        default: "bal-devnet-4"
       client_repos:
         type: string
         default: |
@@ -124,7 +124,7 @@ jobs:
         with:
           client_repos: ${{ inputs.client_repos }}
           client_images: ${{ inputs.client_images }}
-          common_client_tag: ${{ inputs.common_client_tag || 'bal-devnet-3' }}
+          common_client_tag: ${{ inputs.common_client_tag || 'bal-devnet-4' }}
           client_source: ${{ inputs.client_source || 'git' }}
           hive_version: ${{ inputs.hive_version || 'ethereum/hive@master' }}
           goproxy: ${{ env.GOPROXY }}
@@ -161,7 +161,7 @@ jobs:
             "reth",
             "ethrex"
           '))}}
-        # TODO: add back "ethereum/eels/consume-rlp" when clients have bal-devnet-3 branch
+        # TODO: add back "ethereum/eels/consume-rlp" when clients have bal-devnet-4 branch
         simulator: >-
           ${{ fromJSON(format('[{0}]', inputs.simulator || '
             "ethereum/eels/consume-engine"

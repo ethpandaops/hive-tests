@@ -34,7 +34,7 @@ on:
         type: string
         description: >-
           If provided, this tag will be used for all clients, overriding individual tags/branches in client_repos and client_images
-        default: "bal-devnet-3"
+        default: "bal-devnet-4"
       client_repos:
         type: string
         default: |
@@ -152,7 +152,7 @@ jobs:
         name: "Client config: schedule"
         id: client_config_schedule
         with:
-          common_client_tag: "bal-devnet-3"
+          common_client_tag: "bal-devnet-4"
           client_source: "git"
           hive_version: "ethereum/hive@master"
           goproxy: ${{ env.GOPROXY }}
