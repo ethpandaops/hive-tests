@@ -24,11 +24,9 @@ The following Ethereum execution clients are tested:
 The repository runs various test simulators including:
 
 - **[devp2p](https://github.com/ethereum/hive/tree/master/simulators/devp2p)**
-- **[ethereum/consensus](https://github.com/ethereum/hive/tree/master/simulators/ethereum/consensus)**
 - **[ethereum/eels/consume-engine](https://github.com/ethereum/hive/tree/master/simulators/ethereum/eels/consume-engine)**
 - **[ethereum/eels/consume-rlp](https://github.com/ethereum/hive/tree/master/simulators/ethereum/eels/consume-rlp)**
 - **[ethereum/engine](https://github.com/ethereum/hive/tree/master/simulators/ethereum/engine)**
-- **[ethereum/graphql](https://github.com/ethereum/hive/tree/master/simulators/ethereum/graphql)**
 - **[ethereum/rpc-compat](https://github.com/ethereum/hive/tree/master/simulators/ethereum/rpc-compat)**
 - **[ethereum/sync](https://github.com/ethereum/hive/tree/master/simulators/ethereum/sync)**
 
@@ -43,13 +41,9 @@ Tests run via GitHub Actions. See the [`generic.yaml` workflow](.github/workflow
 The repository includes additional specialized workflows that target specific consensus testing scenarios which take a long time to run. These workflows run on a different schedules and have different timeouts:
 
 - **[`sim-devp2p.yaml`](.github/workflows/sim-devp2p.yaml)**
-- **[`sim-ethereum-consensus-legacy-cancun.yaml`](.github/workflows/sim-ethereum-consensus-legacy-cancun.yaml)**
-- **[`sim-ethereum-consensus-legacy.yaml`](.github/workflows/sim-ethereum-consensus-legacy.yaml)**
-- **[`sim-ethereum-consensus.yaml`](.github/workflows/sim-ethereum-consensus.yaml)**
 - **[`sim-ethereum-eels-consume-engine.yaml`](.github/workflows/sim-ethereum-eels-consume-engine.yaml)**
 - **[`sim-ethereum-eels-consume-rlp.yaml`](.github/workflows/sim-ethereum-eels-consume-rlp.yaml)**
 - **[`sim-ethereum-engine.yaml`](.github/workflows/sim-ethereum-engine.yaml)**
-- **[`sim-ethereum-graphql.yaml`](.github/workflows/sim-ethereum-graphql.yaml)**
 - **[`sim-ethereum-rpc-compat.yaml`](.github/workflows/sim-ethereum-rpc-compat.yaml)**
 - **[`sim-ethereum-sync.yaml`](.github/workflows/sim-ethereum-sync.yaml)**
 

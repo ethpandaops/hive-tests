@@ -18,11 +18,9 @@ on:
         default: >-
           [
             "devp2p",
-            "ethereum/consensus",
             "ethereum/eels/consume-engine",
             "ethereum/eels/consume-rlp",
             "ethereum/engine",
-            "ethereum/graphql",
             "ethereum/rpc-compat"
           ]
         description: JSON array of simulators to test .e.g ethereum/rpc-compat, ethereum/eels/consume-engine, ethereum/eels/consume-rlp
@@ -111,12 +109,6 @@ env:
   # Flags used for the ethereum/rpc-compat simulator
   RPC_COMPAT_FLAGS: >-
     --sim.loglevel=3
-  # Flags used for the ethereum/consensus simulator
-  CONSENSUS_FLAGS: >-
-    --sim.loglevel=3
-  # Flags used for the ethereum/graphql simulator
-  GRAPHQL_FLAGS: >-
-    --sim.loglevel=3
 
 jobs:
   prepare:
@@ -144,7 +136,6 @@ jobs:
     needs: prepare
     runs-on: >-
       ${{
-        matrix.simulator == 'ethereum/consensus' && 'self-hosted-ghr-size-m-x64' ||
         matrix.simulator == 'ethereum/engine' && 'self-hosted-ghr-size-m-x64' ||
         matrix.simulator == 'ethereum/sync' && 'self-hosted-ghr-size-xl-x64' ||
         contains(matrix.simulator, 'ethereum/eels/') && 'self-hosted-ghr-size-ccx33-x64' ||
@@ -183,7 +174,6 @@ jobs:
           extra_flags: >-
             ${{ env.GLOBAL_EXTRA_FLAGS }}
             ${{ matrix.simulator == 'ethereum/rpc-compat' && env.RPC_COMPAT_FLAGS || '' }}
-            ${{ matrix.simulator == 'ethereum/consensus' && env.CONSENSUS_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-engine' && env.EELS_ENGINE_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-rlp' && env.EELS_RLP_FLAGS || '' }}
             ${{ inputs.extra_flags }}
