@@ -120,7 +120,7 @@ jobs:
     env:
       # BAL-specific environment variables
       HIVE_PARALLEL_TX_PROCESSING_DISABLED: "true"
-      HIVE_AMSTERDAM_TIMESTAMP: "1759250952"
+      HIVE_AMSTERDAM_TIMESTAMP: "1777456800"
       # Hardcoded EELS build args pinned to snobal-devnet-5@v8037.0.0
       EELS_BUILD_ARG_FIXTURES: "https://github.com/ethereum/execution-spec-tests/releases/download/snobal-devnet-5@v8037.0.0/fixtures_snobal-devnet-5.tar.gz"
       EELS_BUILD_ARG_BRANCH: "devnets/snobal/5"
