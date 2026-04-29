@@ -1,5 +1,7 @@
-name: Hive - BAL Quick
+name: Hive - SNOBAL Devnet 5 Quick
 on:
+  schedule:
+    - cron: "45 12 * * *"
   workflow_dispatch:
     inputs:
       client:
@@ -8,7 +10,7 @@ on:
         description: Comma-separated list of clients to test .e.g go-ethereum, besu, reth, nethermind, erigon, nimbus-el, ethrex
       simulator:
         type: string
-        # TODO: add back "ethereum/eels/consume-rlp" when clients have bal-devnet-4 branch
+        # TODO: add back "ethereum/eels/consume-rlp" when clients have snobal-devnet-5 branch
         default: >-
           "ethereum/eels/consume-engine"
         description: >-
@@ -32,7 +34,7 @@ on:
         type: string
         description: >-
           If provided, this tag will be used for all clients, overriding individual tags/branches in client_repos and client_images
-        default: "bal-devnet-4"
+        default: "bal-devnet-5"
       client_repos:
         type: string
         default: |
@@ -41,6 +43,9 @@ on:
             "besu": "besu-eth/besu@main",
             "reth": "paradigmxyz/reth@main",
             "nethermind": "NethermindEth/nethermind@master",
+            "erigon": "erigontech/erigon@main",
+            "nimbusel": "status-im/nimbus-eth1@master",
+            "ethrex": "lambdaclass/ethrex@main"
           }
         description: 'JSON object containing client versions in format {"client": "repo@tag", ...}'
       client_images:
@@ -62,8 +67,8 @@ env:
   GOPROXY: "${{ vars.GOPROXY }}"
   # Hive action environment variables
   S3_BUCKET: hive-results
-  S3_PATH: bal-quick
-  S3_PUBLIC_URL: https://hive.ethpandaops.io/#/test/bal-quick/
+  S3_PATH: snobal-devnet-5-quick
+  S3_PUBLIC_URL: https://hive.ethpandaops.io/#/test/snobal-devnet-5-quick/
   INSTALL_RCLONE_VERSION: v1.68.2
   # Flags used for all simulators
   GLOBAL_EXTRA_FLAGS: >-
@@ -77,7 +82,7 @@ env:
     --sim.parallelism=6
     --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
-    --sim.limit='.*(8024|7708|7778|7843|7928|7954|8037).*'
+    --sim.limit='.*(7708|7778|7843|7928|7954|7976|7981|8024|8037).*'
     --sim.limit.exact=false
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-rlp simulator
@@ -85,7 +90,7 @@ env:
     --sim.parallelism=6
     --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
-    --sim.limit='.*(8024|7708|7778|7843|7928|7954|8037).*'
+    --sim.limit='.*(7708|7778|7843|7928|7954|7976|7981|8024|8037).*'
     --sim.limit.exact=false
     --sim.loglevel=3
 
@@ -100,19 +105,19 @@ jobs:
       fixtures_url: ${{ steps.latest.outputs.fixtures_url }}
       eels_branch: ${{ steps.latest.outputs.eels_branch }}
     steps:
-      - name: Get latest bal fixtures and branch
+      - name: Get latest snobal-devnet-5 fixtures and branch
         id: latest
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Get latest bal fixtures release from EEST
-          TAG=$(gh release list --repo ethereum/execution-spec-tests --json tagName --limit 100 | jq -r '[.[] | select(.tagName | startswith("bal"))][0].tagName')
-          FIXTURES_URL="https://github.com/ethereum/execution-spec-tests/releases/download/${TAG}/fixtures_bal.tar.gz"
+          # Get latest snobal-devnet-5 fixtures release from EEST
+          TAG=$(gh release list --repo ethereum/execution-spec-tests --json tagName --limit 100 | jq -r '[.[] | select(.tagName | startswith("snobal-devnet-5"))][0].tagName')
+          FIXTURES_URL="https://github.com/ethereum/execution-spec-tests/releases/download/${TAG}/fixtures_snobal-devnet-5.tar.gz"
           echo "fixtures_url=$FIXTURES_URL" >> "$GITHUB_OUTPUT"
           echo "Using fixtures from: $FIXTURES_URL"
 
-          # Get latest devnets/bal/N branch from EELS (highest number)
-          BRANCH=$(gh api repos/ethereum/execution-specs/branches --paginate -q '.[].name' | grep -E '^devnets/bal/[0-9]+$' | sort -t/ -k3 -n | tail -1)
+          # Get latest devnets/snobal/N branch from EELS (highest number)
+          BRANCH=$(gh api repos/ethereum/execution-specs/branches --paginate -q '.[].name' | grep -E '^devnets/snobal/[0-9]+$' | sort -t/ -k3 -n | tail -1)
           echo "eels_branch=$BRANCH" >> "$GITHUB_OUTPUT"
           echo "Using EELS branch: $BRANCH"
 
@@ -122,7 +127,7 @@ jobs:
         with:
           client_repos: ${{ inputs.client_repos }}
           client_images: ${{ inputs.client_images }}
-          common_client_tag: ${{ inputs.common_client_tag || 'bal-devnet-4' }}
+          common_client_tag: ${{ inputs.common_client_tag || 'bal-devnet-5' }}
           client_source: ${{ inputs.client_source || 'git' }}
           hive_version: ${{ inputs.hive_version || 'ethereum/hive@master' }}
           goproxy: ${{ env.GOPROXY }}
@@ -159,7 +164,7 @@ jobs:
             "reth",
             "ethrex"
           '))}}
-        # TODO: add back "ethereum/eels/consume-rlp" when clients have bal-devnet-4 branch
+        # TODO: add back "ethereum/eels/consume-rlp" when clients have snobal-devnet-5 branch
         simulator: >-
           ${{ fromJSON(format('[{0}]', inputs.simulator || '
             "ethereum/eels/consume-engine"

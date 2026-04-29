@@ -1,7 +1,5 @@
 name: Hive - BAL
 on:
-  schedule:
-    - cron: "45 13 * * *"
   workflow_dispatch:
     # Note: We're limited to 10 inputs
     inputs:
