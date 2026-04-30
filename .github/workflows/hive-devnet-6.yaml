@@ -1,6 +1,9 @@
-name: Hive - BAL Quick
+name: Hive - SNOBAL Devnet 6
 on:
+  schedule:
+    - cron: "45 13 * * *"
   workflow_dispatch:
+    # Note: We're limited to 10 inputs
     inputs:
       client:
         type: string
@@ -8,19 +11,18 @@ on:
         description: Comma-separated list of clients to test .e.g go-ethereum, besu, reth, nethermind, erigon, nimbus-el, ethrex
       simulator:
         type: string
-        # TODO: add back "ethereum/eels/consume-rlp" when clients have bal-devnet-4 branch
+        # TODO: add back "ethereum/eels/consume-rlp"
         default: >-
           "ethereum/eels/consume-engine"
         description: >-
           Comma-separated list of simulators to test
-          .e.g ethereum/eels/consume-engine, ethereum/eels/consume-rlp
+          .e.g ethereum/rpc-compat, ethereum/eels/consume-engine, ethereum/eels/consume-rlp, ethereum/eels/execute-blobs
       hive_version:
         type: string
         default: ethereum/hive@master
         description: GitHub repository and tag for hive (repo@tag)
       client_source:
         type: choice
-        default: docker
         description: >-
           How client images should be sourced.
           'git' will use the github repo and tag (See client_repos).
@@ -32,7 +34,7 @@ on:
         type: string
         description: >-
           If provided, this tag will be used for all clients, overriding individual tags/branches in client_repos and client_images
-        default: "bal-devnet-4"
+        default: "bal-devnet-6"
       client_repos:
         type: string
         default: |
@@ -41,6 +43,9 @@ on:
             "besu": "besu-eth/besu@main",
             "reth": "paradigmxyz/reth@main",
             "nethermind": "NethermindEth/nethermind@master",
+            "erigon": "erigontech/erigon@main",
+            "nimbusel": "status-im/nimbus-eth1@master",
+            "ethrex": "lambdaclass/ethrex@main"
           }
         description: 'JSON object containing client versions in format {"client": "repo@tag", ...}'
       client_images:
@@ -62,8 +67,8 @@ env:
   GOPROXY: "${{ vars.GOPROXY }}"
   # Hive action environment variables
   S3_BUCKET: hive-results
-  S3_PATH: bal-quick
-  S3_PUBLIC_URL: https://hive.ethpandaops.io/#/test/bal-quick/
+  S3_PATH: bal
+  S3_PUBLIC_URL: https://hive.ethpandaops.io/#/test/bal/
   INSTALL_RCLONE_VERSION: v1.68.2
   # Flags used for all simulators
   GLOBAL_EXTRA_FLAGS: >-
@@ -77,7 +82,7 @@ env:
     --sim.parallelism=6
     --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
-    --sim.limit='.*(8024|7708|7778|7843|7928|7954|8037).*'
+    --sim.limit='.*fork_(Amsterdam|BPO2ToAmsterdamAtTime15k|Osaka).*'
     --sim.limit.exact=false
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-rlp simulator
@@ -85,58 +90,76 @@ env:
     --sim.parallelism=6
     --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
-    --sim.limit='.*(8024|7708|7778|7843|7928|7954|8037).*'
+    --sim.limit='.*fork_(Amsterdam|BPO2ToAmsterdamAtTime15k|Osaka).*'
     --sim.limit.exact=false
+    --sim.loglevel=3
+  # Flags used for the ethereum/eels/execute simulator
+  EELS_EXECUTE_FLAGS: >-
+    --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
+  # Flags used for the ethereum/rpc-compat simulator
+  RPC_COMPAT_FLAGS: >-
     --sim.loglevel=3
 
 jobs:
   prepare:
     runs-on: ubuntu-latest
     outputs:
-      hive_repo: ${{ steps.client_config.outputs.hive_repo }}
-      hive_tag: ${{ steps.client_config.outputs.hive_tag }}
-      client_config: ${{ steps.client_config.outputs.client_config }}
-      client_source: ${{ inputs.client_source || 'git' }}
-      fixtures_url: ${{ steps.latest.outputs.fixtures_url }}
-      eels_branch: ${{ steps.latest.outputs.eels_branch }}
+      # Hive version
+      hive_repo: >-
+        ${{
+          steps.client_config_schedule.outputs.hive_repo ||
+          steps.client_config_dispatch.outputs.hive_repo
+        }}
+      hive_tag: >-
+        ${{
+          steps.client_config_schedule.outputs.hive_tag ||
+          steps.client_config_dispatch.outputs.hive_tag
+        }}
+      # client_config contains the YAML client config for Hive
+      client_config: >-
+        ${{
+          steps.client_config_schedule.outputs.client_config ||
+          steps.client_config_dispatch.outputs.client_config
+        }}
+      # client_source to determine if we need docker auth
+      client_source: >-
+        ${{
+          github.event_name == 'schedule' && 'git' ||
+          inputs.client_source
+        }}
     steps:
-      - name: Get latest bal fixtures and branch
-        id: latest
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          # Get latest bal fixtures release from EEST
-          TAG=$(gh release list --repo ethereum/execution-spec-tests --json tagName --limit 100 | jq -r '[.[] | select(.tagName | startswith("bal"))][0].tagName')
-          FIXTURES_URL="https://github.com/ethereum/execution-spec-tests/releases/download/${TAG}/fixtures_bal.tar.gz"
-          echo "fixtures_url=$FIXTURES_URL" >> "$GITHUB_OUTPUT"
-          echo "Using fixtures from: $FIXTURES_URL"
-
-          # Get latest devnets/bal/N branch from EELS (highest number)
-          BRANCH=$(gh api repos/ethereum/execution-specs/branches --paginate -q '.[].name' | grep -E '^devnets/bal/[0-9]+$' | sort -t/ -k3 -n | tail -1)
-          echo "eels_branch=$BRANCH" >> "$GITHUB_OUTPUT"
-          echo "Using EELS branch: $BRANCH"
+      - uses: ethpandaops/hive-github-action/helpers/client-config@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
+        if: github.event_name == 'schedule'
+        name: "Client config: schedule"
+        id: client_config_schedule
+        with:
+          common_client_tag: "bal-devnet-6"
+          client_source: "git"
+          hive_version: "ethereum/hive@master"
+          goproxy: ${{ env.GOPROXY }}
 
       - uses: ethpandaops/hive-github-action/helpers/client-config@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
-        name: "Client config"
-        id: client_config
+        if: github.event_name == 'workflow_dispatch'
+        name: "Client config: workflow_dispatch"
+        id: client_config_dispatch
         with:
           client_repos: ${{ inputs.client_repos }}
           client_images: ${{ inputs.client_images }}
-          common_client_tag: ${{ inputs.common_client_tag || 'bal-devnet-4' }}
-          client_source: ${{ inputs.client_source || 'git' }}
-          hive_version: ${{ inputs.hive_version || 'ethereum/hive@master' }}
+          common_client_tag: ${{ inputs.common_client_tag }}
+          client_source: ${{ inputs.client_source }}
+          hive_version: ${{ inputs.hive_version }}
           goproxy: ${{ env.GOPROXY }}
 
   test:
-    timeout-minutes: 2160
+    timeout-minutes: 4320
     needs: prepare
     env:
       # BAL-specific environment variables
       HIVE_PARALLEL_TX_PROCESSING_DISABLED: "true"
-      HIVE_AMSTERDAM_TIMESTAMP: "1759250952"
-      # Dynamic EELS build args from prepare job
-      EELS_BUILD_ARG_FIXTURES: ${{ needs.prepare.outputs.fixtures_url }}
-      EELS_BUILD_ARG_BRANCH: ${{ needs.prepare.outputs.eels_branch }}
+      HIVE_AMSTERDAM_TIMESTAMP: "1777456800"
+      # Hardcoded EELS build args pinned to snobal-devnet-6@v1.1.0
+      EELS_BUILD_ARG_FIXTURES: "https://github.com/ethereum/execution-spec-tests/releases/download/snobal-devnet-6@v1.1.0/fixtures_snobal-devnet-6.tar.gz"
+      EELS_BUILD_ARG_BRANCH: "devnets/snobal/6"
     runs-on: >-
       ${{
         matrix.simulator == 'ethereum/rpc-compat' && 'ubuntu-latest' ||
@@ -145,24 +168,24 @@ jobs:
       }}
     concurrency:
       group: >-
-        ${{ github.head_ref || inputs }}-${{ matrix.client }}-${{ matrix.simulator }}-quick
+        ${{ github.head_ref || inputs || github.workflow }}-${{ matrix.client }}-${{ matrix.simulator }}
     strategy:
       fail-fast: false
       matrix:
         client: >-
           ${{ fromJSON(format('[{0}]', inputs.client || '
+            "besu",
             "go-ethereum",
             "nethermind",
+            "reth",
             "nimbus-el",
             "erigon",
-            "besu",
-            "reth",
             "ethrex"
           '))}}
-        # TODO: add back "ethereum/eels/consume-rlp" when clients have bal-devnet-4 branch
         simulator: >-
           ${{ fromJSON(format('[{0}]', inputs.simulator || '
-            "ethereum/eels/consume-engine"
+            "ethereum/eels/consume-engine",
+            "ethereum/eels/consume-rlp"
           '))}}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
