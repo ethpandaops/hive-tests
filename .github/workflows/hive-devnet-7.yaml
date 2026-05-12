@@ -1,4 +1,4 @@
-name: Hive - SNOBAL Devnet 6
+name: Hive - BAL Devnet 7
 on:
   schedule:
     - cron: "45 13 * * *"
@@ -34,7 +34,7 @@ on:
         type: string
         description: >-
           If provided, this tag will be used for all clients, overriding individual tags/branches in client_repos and client_images
-        default: "bal-devnet-6"
+        default: "bal-devnet-7"
       client_repos:
         type: string
         default: |
@@ -133,7 +133,7 @@ jobs:
         name: "Client config: schedule"
         id: client_config_schedule
         with:
-          common_client_tag: "bal-devnet-6"
+          common_client_tag: "bal-devnet-7"
           client_source: "git"
           hive_version: "ethereum/hive@master"
           goproxy: ${{ env.GOPROXY }}
@@ -157,9 +157,9 @@ jobs:
       # BAL-specific environment variables
       HIVE_PARALLEL_TX_PROCESSING_DISABLED: "true"
       HIVE_AMSTERDAM_TIMESTAMP: "1777456800"
-      # Hardcoded EELS build args pinned to snobal-devnet-6@v1.1.0
-      EELS_BUILD_ARG_FIXTURES: "https://github.com/ethereum/execution-spec-tests/releases/download/snobal-devnet-6@v1.1.0/fixtures_snobal-devnet-6.tar.gz"
-      EELS_BUILD_ARG_BRANCH: "devnets/snobal/6"
+      # Hardcoded EELS build args pinned to bal@v7.0.0
+      EELS_BUILD_ARG_FIXTURES: "https://github.com/ethereum/execution-spec-tests/releases/download/bal@v7.0.0/fixtures_bal.tar.gz"
+      EELS_BUILD_ARG_BRANCH: "devnets/bal/7"
     runs-on: >-
       ${{
         matrix.simulator == 'ethereum/rpc-compat' && 'ubuntu-latest' ||
