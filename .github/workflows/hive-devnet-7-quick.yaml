@@ -122,7 +122,7 @@ jobs:
       HIVE_PARALLEL_TX_PROCESSING_DISABLED: "true"
       HIVE_AMSTERDAM_TIMESTAMP: "1777456800"
       # Hardcoded EELS build args pinned to bal@v7.1.1
-      EELS_BUILD_ARG_FIXTURES: "https://github.com/ethereum/execution-spec-tests/releases/download/bal@v7.1.1/fixtures_bal.tar.gz"
+      EELS_BUILD_ARG_FIXTURES: "https://github.com/ethereum/execution-specs/releases/download/tests-bal@v7.1.1/fixtures_bal.tar.gz"
       EELS_BUILD_ARG_BRANCH: "devnets/bal/7"
     runs-on: >-
       ${{
