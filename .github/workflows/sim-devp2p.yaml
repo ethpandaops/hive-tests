@@ -19,6 +19,7 @@ jobs:
               ref: 'master',
               inputs: {
                 simulator: '["devp2p"]',
+                client: '["besu", "ethrex", "go-ethereum", "nethermind"]',
                 concurrency_group: 'devp2p',
                 timeout_minutes: '60'
               }
