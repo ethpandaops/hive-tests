@@ -19,7 +19,7 @@ jobs:
               ref: 'master',
               inputs: {
                 simulator: '["ethereum/graphql"]',
-                client: '["go-ethereum","besu"]',
+                client: '["go-ethereum","besu", "erigon"]',
                 concurrency_group: 'graphql',
                 timeout_minutes: '60'
               }
