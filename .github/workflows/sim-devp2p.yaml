@@ -1,4 +1,4 @@
-name: devp2p (devp2p,discv4,discv5)
+name: devp2p (discv4,discv5,eth,snap)
 on:
   workflow_dispatch:
   schedule:
@@ -12,6 +12,20 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            // discv4/discv5/eth suites: all clients (generic.yaml default client list)
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'generic.yaml',
+              ref: 'master',
+              inputs: {
+                simulator: '["devp2p"]',
+                extra_flags: "--sim.limit='(discv4|discv5|eth)/'",
+                concurrency_group: 'devp2p',
+                timeout_minutes: '60'
+              }
+            });
+            // snap suite: only clients that support serving snap sync
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -20,7 +34,8 @@ jobs:
               inputs: {
                 simulator: '["devp2p"]',
                 client: '["besu", "ethrex", "go-ethereum", "nethermind"]',
-                concurrency_group: 'devp2p',
+                extra_flags: '--sim.limit=snap/',
+                concurrency_group: 'devp2p-snap',
                 timeout_minutes: '60'
               }
             });
