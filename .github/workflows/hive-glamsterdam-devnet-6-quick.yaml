@@ -82,7 +82,7 @@ env:
     --sim.parallelism=6
     --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
-    --sim.limit='.*(7708|7778|7843|7928|7954|7976|7981|8024|8037).*'
+    --sim.limit='.*(2780|7708|7732|7778|7843|7928|7954|7975|7976|7981|7997|8024|8037|8038|8045|8061|8070|8159|8246|8282).*'
     --sim.limit.exact=false
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-rlp simulator
@@ -90,7 +90,7 @@ env:
     --sim.parallelism=6
     --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
-    --sim.limit='.*(7708|7778|7843|7928|7954|7976|7981|8024|8037).*'
+    --sim.limit='.*(2780|7708|7732|7778|7843|7928|7954|7975|7976|7981|7997|8024|8037|8038|8045|8061|8070|8159|8246|8282).*'
     --sim.limit.exact=false
     --sim.loglevel=3
 
