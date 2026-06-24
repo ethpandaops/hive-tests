@@ -127,7 +127,7 @@ jobs:
     runs-on: >-
       ${{
         matrix.simulator == 'ethereum/rpc-compat' && 'ubuntu-latest' ||
-        contains(matrix.simulator, 'ethereum/eels/') && 'self-hosted-ghr-size-ccx33-x64' ||
+        contains(matrix.simulator, 'ethereum/eels/') && 'self-hosted-ghr-size-xl-do-x64' ||
         'ubuntu-latest'
       }}
     concurrency:
