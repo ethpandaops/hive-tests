@@ -157,8 +157,8 @@ jobs:
       # BAL-specific environment variables
       HIVE_PARALLEL_TX_PROCESSING_DISABLED: "true"
       HIVE_AMSTERDAM_TIMESTAMP: "1777456800"
-      # Hardcoded EELS build args pinned to tests-glamsterdam-devnet@v6.0.1 (release + branch pending ~2026-06-22, EELS tracker ethereum/execution-specs#2915)
-      EELS_BUILD_ARG_FIXTURES: "https://github.com/ethereum/execution-specs/releases/download/tests-glamsterdam-devnet@v6.0.1/fixtures_glamsterdam-devnet.tar.gz"
+      # Hardcoded EELS build args pinned to tests-glamsterdam-devnet@v6.1.0 (release + branch pending ~2026-06-22, EELS tracker ethereum/execution-specs#2915)
+      EELS_BUILD_ARG_FIXTURES: "https://github.com/ethereum/execution-specs/releases/download/tests-glamsterdam-devnet@v6.1.0/fixtures_glamsterdam-devnet.tar.gz"
       EELS_BUILD_ARG_BRANCH: "devnets/glamsterdam/6"
     runs-on: >-
       ${{
