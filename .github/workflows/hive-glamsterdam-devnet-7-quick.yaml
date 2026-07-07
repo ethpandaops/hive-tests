@@ -10,9 +10,9 @@ on:
         description: Comma-separated list of clients to test .e.g go-ethereum, besu, reth, nethermind, erigon, nimbus-el, ethrex
       simulator:
         type: string
-        # TODO: add back "ethereum/eels/consume-rlp" when clients have glamsterdam-devnet-7 branch
         default: >-
-          "ethereum/eels/consume-engine"
+          "ethereum/eels/consume-engine",
+          "ethereum/eels/consume-rlp"
         description: >-
           Comma-separated list of simulators to test
           .e.g ethereum/eels/consume-engine, ethereum/eels/consume-rlp
@@ -145,10 +145,10 @@ jobs:
             "reth",
             "ethrex"
           '))}}
-        # TODO: add back "ethereum/eels/consume-rlp" when clients have glamsterdam-devnet-7 branch
         simulator: >-
           ${{ fromJSON(format('[{0}]', inputs.simulator || '
-            "ethereum/eels/consume-engine"
+            "ethereum/eels/consume-engine",
+            "ethereum/eels/consume-rlp"
           '))}}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

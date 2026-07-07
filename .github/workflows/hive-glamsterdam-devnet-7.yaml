@@ -11,9 +11,9 @@ on:
         description: Comma-separated list of clients to test .e.g go-ethereum, besu, reth, nethermind, erigon, nimbus-el, ethrex
       simulator:
         type: string
-        # TODO: add back "ethereum/eels/consume-rlp"
         default: >-
-          "ethereum/eels/consume-engine"
+          "ethereum/eels/consume-engine",
+          "ethereum/eels/consume-rlp"
         description: >-
           Comma-separated list of simulators to test
           .e.g ethereum/rpc-compat, ethereum/eels/consume-engine, ethereum/eels/consume-rlp, ethereum/eels/execute-blobs
