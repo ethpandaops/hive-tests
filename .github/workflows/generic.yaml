@@ -103,6 +103,11 @@ env:
     --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
     --sim.loglevel=3
+  # Flags used for the ethereum/eels/consume-enginex simulator
+  EELS_ENGINEX_FLAGS: >-
+    --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
+    --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
+    --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-rlp simulator
   EELS_RLP_FLAGS: >-
     --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
@@ -185,6 +190,7 @@ jobs:
             ${{ matrix.simulator == 'ethereum/rpc-compat' && env.RPC_COMPAT_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/consensus' && env.CONSENSUS_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-engine' && env.EELS_ENGINE_FLAGS || '' }}
+            ${{ matrix.simulator == 'ethereum/eels/consume-enginex' && env.EELS_ENGINEX_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-rlp' && env.EELS_RLP_FLAGS || '' }}
             ${{ inputs.extra_flags }}
           s3_upload: true
