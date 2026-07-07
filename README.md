@@ -26,6 +26,7 @@ The repository runs various test simulators including:
 - **[devp2p](https://github.com/ethereum/hive/tree/master/simulators/devp2p)**
 - **[ethereum/consensus](https://github.com/ethereum/hive/tree/master/simulators/ethereum/consensus)**
 - **[ethereum/eels/consume-engine](https://github.com/ethereum/hive/tree/master/simulators/ethereum/eels/consume-engine)**
+- **[ethereum/eels/consume-enginex](https://github.com/ethereum/hive/tree/master/simulators/ethereum/eels/consume-enginex)**
 - **[ethereum/eels/consume-rlp](https://github.com/ethereum/hive/tree/master/simulators/ethereum/eels/consume-rlp)**
 - **[ethereum/engine](https://github.com/ethereum/hive/tree/master/simulators/ethereum/engine)**
 - **[ethereum/graphql](https://github.com/ethereum/hive/tree/master/simulators/ethereum/graphql)**
@@ -47,6 +48,7 @@ The repository includes additional specialized workflows that target specific co
 - **[`sim-ethereum-consensus-legacy.yaml`](.github/workflows/sim-ethereum-consensus-legacy.yaml)**
 - **[`sim-ethereum-consensus.yaml`](.github/workflows/sim-ethereum-consensus.yaml)**
 - **[`sim-ethereum-eels-consume-engine.yaml`](.github/workflows/sim-ethereum-eels-consume-engine.yaml)**
+- **[`sim-ethereum-eels-consume-enginex.yaml`](.github/workflows/sim-ethereum-eels-consume-enginex.yaml)**
 - **[`sim-ethereum-eels-consume-rlp.yaml`](.github/workflows/sim-ethereum-eels-consume-rlp.yaml)**
 - **[`sim-ethereum-engine.yaml`](.github/workflows/sim-ethereum-engine.yaml)**
 - **[`sim-ethereum-graphql.yaml`](.github/workflows/sim-ethereum-graphql.yaml)**
