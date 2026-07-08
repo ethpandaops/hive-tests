@@ -19,7 +19,7 @@ jobs:
               ref: 'master',
               inputs: {
                 simulator: '["ethereum/eels/consume-enginex"]',
-                client: '["besu", "go-ethereum", "reth"]',
+                client: '["besu", "ethrex", "go-ethereum", "nethermind", "nimbus-el", "reth"]',
                 concurrency_group: 'eels-consume-enginex',
                 timeout_minutes: '1680'
               }
