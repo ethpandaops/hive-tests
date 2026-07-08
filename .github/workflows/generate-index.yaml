@@ -27,6 +27,9 @@ jobs:
       cancel-in-progress: true
 
     steps:
+    - uses: ethpandaops/hive-github-action/helpers/self-hosted-runner-dependencies@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
+      if: runner.environment != 'github-hosted'
+
     - name: Run Index Generator
       uses: ethpandaops/hive-github-action@master # v0.6.0-unreleased
       with:
