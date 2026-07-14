@@ -80,6 +80,14 @@ on:
         type: string
         default: "2880"
         description: "Timeout in minutes for the test job (default: 2880 = 2 days)"
+      client_timeout_overrides:
+        type: string
+        default: '{ "besu": { "ethereum/eels/consume-engine": 2880 } }'
+        description: >-
+          JSON object mapping client name to simulator to a job timeout in
+          minutes that takes precedence over timeout_minutes for that
+          client and simulator (besu needs ~35h for eels/consume-engine,
+          more than the 28h the daily triggers allow)
 
 
 env:
@@ -145,7 +153,7 @@ jobs:
           goproxy: ${{ env.GOPROXY }}
 
   test:
-    timeout-minutes: ${{ fromJSON(inputs.timeout_minutes) }}
+    timeout-minutes: ${{ fromJSON(inputs.client_timeout_overrides)[matrix.client][matrix.simulator] || fromJSON(inputs.timeout_minutes) }}
     needs: prepare
     runs-on: >-
       ${{
