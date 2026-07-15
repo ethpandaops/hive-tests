@@ -98,7 +98,7 @@ env:
   S3_PATH: generic
   S3_PUBLIC_URL: https://hive.ethpandaops.io/#/test/generic/
   INSTALL_RCLONE_VERSION: v1.68.2
-  EELS_BUILD_ARG_FIXTURES: https://github.com/ethereum/execution-specs/releases/download/tests@v20.0.0/fixtures.tar.gz
+  EELS_BUILD_ARG_FIXTURES: https://github.com/ethereum/execution-specs/releases/download/tests@v20.0.1/fixtures.tar.gz
   EELS_BUILD_ARG_BRANCH: forks/amsterdam
   # Flags used for all simulators
   GLOBAL_EXTRA_FLAGS: >-
