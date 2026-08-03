@@ -97,6 +97,7 @@ env:
   # Flags used for the ethereum/eels/execute-blobs simulator
   EELS_EXECUTE_FLAGS: >-
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
+    --sim.buildarg fork=Amsterdam
     --sim.loglevel=3
   # Flags used for the ethereum/rpc-compat simulator
   RPC_COMPAT_FLAGS: >-
