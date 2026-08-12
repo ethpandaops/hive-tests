@@ -6,8 +6,8 @@ on:
     inputs:
       client:
         type: string
-        default: '"go-ethereum","nethermind","nimbus-el","erigon","besu","reth","ethrex"'
-        description: Comma-separated list of clients to test .e.g go-ethereum, besu, reth, nethermind, erigon, nimbus-el, ethrex
+        default: '"go-ethereum","nethermind","nimbus-el","erigon","besu","reth","ethrex","eels"'
+        description: Comma-separated list of clients to test .e.g go-ethereum, besu, reth, nethermind, erigon, nimbus-el, ethrex, eels
       simulator:
         type: string
         default: >-
@@ -85,6 +85,15 @@ env:
     --sim.limit='.*(2780|7708|7732|7778|7843|7928|7954|7975|7976|7981|7997|8024|8037|8038|8045|8061|8070|8159|8246|8282).*'
     --sim.limit.exact=false
     --sim.loglevel=3
+  # Flags used for the ethereum/eels/consume-engine simulator when the
+  # client is EELS itself (only supports running Amsterdam from genesis)
+  EELS_ENGINE_FLAGS_EELS_CLIENT: >-
+    --sim.parallelism=6
+    --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
+    --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
+    --sim.limit='.*(2780|7708|7732|7778|7843|7928|7954|7975|7976|7981|7997|8024|8037|8038|8045|8061|8070|8159|8246|8282).*fork_Amsterdam-.*'
+    --sim.limit.exact=false
+    --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-rlp simulator
   EELS_RLP_FLAGS: >-
     --sim.parallelism=6
@@ -150,6 +159,9 @@ jobs:
             "ethereum/eels/consume-engine",
             "ethereum/eels/consume-rlp"
           '))}}
+        exclude:
+          - client: eels
+            simulator: ethereum/eels/consume-rlp
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ethpandaops/hive-github-action/helpers/self-hosted-runner-dependencies@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
@@ -168,7 +180,7 @@ jobs:
           extra_flags: >-
             ${{ env.GLOBAL_EXTRA_FLAGS }}
             ${{ needs.prepare.outputs.client_source == 'docker' && env.DOCKER_AUTH_FLAGS || '' }}
-            ${{ matrix.simulator == 'ethereum/eels/consume-engine' && env.EELS_ENGINE_FLAGS || '' }}
+            ${{ matrix.simulator == 'ethereum/eels/consume-engine' && (matrix.client == 'eels' && env.EELS_ENGINE_FLAGS_EELS_CLIENT || env.EELS_ENGINE_FLAGS) || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-rlp' && env.EELS_RLP_FLAGS || '' }}
           s3_upload: true
           s3_bucket: ${{ env.S3_BUCKET }}
