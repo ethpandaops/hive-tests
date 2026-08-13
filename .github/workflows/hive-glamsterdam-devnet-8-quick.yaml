@@ -130,8 +130,10 @@ jobs:
         'ubuntu-latest'
       }}
     concurrency:
+      # Constant prefix so scheduled and dispatched runs share the same
+      # per-client+simulator queue (new runs wait for the previous one).
       group: >-
-        ${{ github.head_ref || inputs }}-${{ matrix.client }}-${{ matrix.simulator }}-quick
+        hive-glamsterdam-devnet-8-quick-${{ matrix.client }}-${{ matrix.simulator }}
     strategy:
       fail-fast: false
       matrix:

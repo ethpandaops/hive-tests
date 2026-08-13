@@ -1,0 +1,66 @@
+name: Hive - Watch Client Images
+on:
+  schedule:
+    - cron: "*/20 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+env:
+  IMAGE_TAG: glamsterdam-devnet-8
+  TARGET_WORKFLOW: hive-glamsterdam-devnet-8-quick.yaml
+  STATE_REMOTE: s3:hive-results/glamsterdam-quick/image-digests.json
+  INSTALL_RCLONE_VERSION: v1.68.2
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: watch-client-images
+      cancel-in-progress: false
+    steps:
+      - uses: AnimMouse/setup-rclone@0d99fa3878a334d3e307c1a8372ad55550fdaea7 # v1.11.0
+        with:
+          rclone_config: ${{ secrets.HIVE_RCLONE_CONFIG }}
+          version: ${{ env.INSTALL_RCLONE_VERSION }}
+
+      - name: Fetch last-dispatched digests
+        run: rclone cat "$STATE_REMOTE" > state.json 2>/dev/null || echo '{}' > state.json
+
+      - name: Dispatch runs for clients with updated images
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # hive client name -> ethpandaops Docker Hub repository
+          CLIENTS="go-ethereum:geth besu:besu reth:reth nethermind:nethermind
+                   erigon:erigon nimbus-el:nimbus-eth1 ethrex:ethrex"
+          changed=()
+          for pair in $CLIENTS; do
+            client=${pair%%:*}
+            image=${pair##*:}
+            digest=$(curl -sf "https://hub.docker.com/v2/repositories/ethpandaops/${image}/tags/${IMAGE_TAG}" \
+              | jq -r '.digest // empty')
+            [ -z "$digest" ] && continue  # tag missing or Hub hiccup: retry next tick
+            prev=$(jq -r --arg c "$client" '.[$c] // empty' state.json)
+            if [ "$digest" != "$prev" ]; then
+              changed+=("$client")
+              jq --arg c "$client" --arg d "$digest" '.[$c] = $d' state.json > state.tmp
+              mv state.tmp state.json
+            fi
+          done
+          if [ ${#changed[@]} -eq 0 ]; then
+            echo "No image changes."
+            exit 0
+          fi
+          client_list=$(printf '"%s",' "${changed[@]}")
+          echo "Dispatching for: ${client_list%,}"
+          gh workflow run "$TARGET_WORKFLOW" \
+            -f client="${client_list%,}" \
+            -f client_source=docker \
+            -f common_client_tag="$IMAGE_TAG"
+          # Persist state only after a successful dispatch: a duplicate dispatch
+          # on the next tick is collapsed by the target's per-client+simulator
+          # concurrency groups, a missed dispatch is not recovered.
+          rclone rcat "$STATE_REMOTE" < state.json
