@@ -70,6 +70,18 @@ env:
   S3_PATH: glamsterdam-quick
   S3_PUBLIC_URL: https://hive.ethpandaops.io/#/test/glamsterdam-quick/
   INSTALL_RCLONE_VERSION: v1.68.2
+  # Fallback for scheduled runs (no inputs); mirrors the workflow_dispatch
+  # default, incl. the ethpandaops ethrex image (helper defaults to ghcr.io).
+  DEFAULT_CLIENT_IMAGES: |
+    {
+      "geth": "docker.ethquokkaops.io/dh/ethpandaops/geth:master",
+      "besu": "docker.ethquokkaops.io/dh/ethpandaops/besu:main",
+      "reth": "docker.ethquokkaops.io/dh/ethpandaops/reth:main",
+      "nethermind": "docker.ethquokkaops.io/dh/ethpandaops/nethermind:master",
+      "erigon": "docker.ethquokkaops.io/dh/ethpandaops/erigon:main",
+      "nimbusel": "docker.ethquokkaops.io/dh/ethpandaops/nimbus-eth1:master",
+      "ethrex": "docker.ethquokkaops.io/dh/ethpandaops/ethrex:main"
+    }
   # Flags used for all simulators
   GLOBAL_EXTRA_FLAGS: >-
     --client.checktimelimit=300s
@@ -101,16 +113,16 @@ jobs:
       hive_repo: ${{ steps.client_config.outputs.hive_repo }}
       hive_tag: ${{ steps.client_config.outputs.hive_tag }}
       client_config: ${{ steps.client_config.outputs.client_config }}
-      client_source: ${{ inputs.client_source || 'git' }}
+      client_source: ${{ inputs.client_source || 'docker' }}
     steps:
       - uses: ethpandaops/hive-github-action/helpers/client-config@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
         name: "Client config"
         id: client_config
         with:
           client_repos: ${{ inputs.client_repos }}
-          client_images: ${{ inputs.client_images }}
+          client_images: ${{ inputs.client_images || env.DEFAULT_CLIENT_IMAGES }}
           common_client_tag: ${{ inputs.common_client_tag || 'glamsterdam-devnet-8' }}
-          client_source: ${{ inputs.client_source || 'git' }}
+          client_source: ${{ inputs.client_source || 'docker' }}
           hive_version: ${{ inputs.hive_version || 'ethereum/hive@master' }}
           goproxy: ${{ env.GOPROXY }}
 

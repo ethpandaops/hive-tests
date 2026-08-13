@@ -127,7 +127,7 @@ jobs:
       # client_source to determine if we need docker auth
       client_source: >-
         ${{
-          github.event_name == 'schedule' && 'git' ||
+          github.event_name == 'schedule' && 'docker' ||
           inputs.client_source
         }}
     steps:
@@ -136,8 +136,22 @@ jobs:
         name: "Client config: schedule"
         id: client_config_schedule
         with:
+          # Prebuilt ethpandaops images track the same devnet branches and are
+          # rebuilt on every push; skips the in-run client build.
+          # Passed explicitly because the helper's own default uses the
+          # ghcr.io image for ethrex.
+          client_images: |
+            {
+              "geth": "docker.ethquokkaops.io/dh/ethpandaops/geth:master",
+              "besu": "docker.ethquokkaops.io/dh/ethpandaops/besu:main",
+              "reth": "docker.ethquokkaops.io/dh/ethpandaops/reth:main",
+              "nethermind": "docker.ethquokkaops.io/dh/ethpandaops/nethermind:master",
+              "erigon": "docker.ethquokkaops.io/dh/ethpandaops/erigon:main",
+              "nimbusel": "docker.ethquokkaops.io/dh/ethpandaops/nimbus-eth1:master",
+              "ethrex": "docker.ethquokkaops.io/dh/ethpandaops/ethrex:main"
+            }
           common_client_tag: "glamsterdam-devnet-8"
-          client_source: "git"
+          client_source: "docker"
           hive_version: "ethereum/hive@master"
           goproxy: ${{ env.GOPROXY }}
 
