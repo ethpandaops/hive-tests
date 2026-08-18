@@ -6,8 +6,9 @@ Emits one line per watched image:
   sim|<eels simulator>|<concurrency group>
 
 and one line per workflow for its non-client test content (a change in any
-field re-dispatches the workflow for every client):
-  content|<workflow file>|<hive repo@ref>|<eels branch>|<fixtures url>
+field re-dispatches the workflow for every client; a workflow whose branch
+or fixtures do not exist yet is skipped entirely until they do):
+  content|<workflow file>|<eels branch>|<fixtures url>
 
 Used by watch-client-images.yaml to decide what to poll and dispatch, and
 by vet.yaml to fail PRs that break the assumptions this derivation makes
@@ -39,15 +40,14 @@ def unwrap(ref):
 
 
 def content(path):
-    # hive version + the eels branch/fixtures the sims build from
+    # the eels branch/fixtures the sims build from
     doc = yaml.safe_load(open(path))
     env = dict(doc.get("env") or {})
     env.update((doc.get("jobs") or {}).get("test", {}).get("env") or {})
-    hive = inputs(path)["hive_version"]["default"]
     branch = env.get("EELS_BUILD_ARG_BRANCH", "")
     fixtures = env.get("EELS_BUILD_ARG_FIXTURES", "")
     name = path.rsplit("/", 1)[-1]
-    return f"content|{name}|{hive}|{branch}|{fixtures}"
+    return f"content|{name}|{branch}|{fixtures}"
 
 
 # Devnet workflows (full and quick): watch each client image at
