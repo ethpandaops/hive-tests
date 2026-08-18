@@ -137,7 +137,7 @@ jobs:
         id: client_config_schedule
         with:
           # Prebuilt ethpandaops images track the same devnet branches and are
-          # rebuilt on every push; skips the in-run client build.
+          # rebuilt hourly on the latest commit; skips the in-run client build.
           # Passed explicitly because the helper's own default uses the
           # ghcr.io image for ethrex.
           client_images: |
