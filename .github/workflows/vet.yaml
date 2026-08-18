@@ -32,6 +32,9 @@ jobs:
             name=$(basename "$wf")
             grep -q "^hive|${name}|" plan.txt \
               || { echo "ERROR: no watch entries derived for ${name}"; exit 1; }
+            grep -q "^content|${name}|" plan.txt \
+              || { echo "ERROR: no content entry derived for ${name}"; exit 1; }
           done
           grep -q '^generic|' plan.txt || { echo "ERROR: no generic entries"; exit 1; }
+          grep -q '^content|generic.yaml|' plan.txt || { echo "ERROR: no generic content entry"; exit 1; }
           grep -q '^sim|' plan.txt || { echo "ERROR: no eels simulator entries"; exit 1; }
