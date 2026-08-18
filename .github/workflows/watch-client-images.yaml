@@ -10,6 +10,9 @@ permissions:
 env:
   STATE_REMOTE: s3:hive-results/image-digests.json
   INSTALL_RCLONE_VERSION: v1.68.2
+  # How dispatched runs source clients: 'docker' tests the exact image whose
+  # digest changed; 'git' builds the branch tip inside the run instead.
+  CLIENT_SOURCE: docker
 
 jobs:
   watch:
@@ -94,7 +97,7 @@ jobs:
               echo "${wf}: dispatching ${changed[*]}"
               gh workflow run "$wf" \
                 -f client="$(quoted "${changed[@]}")" \
-                -f client_source=docker
+                -f client_source="$CLIENT_SOURCE"
             fi
           done
 
@@ -106,7 +109,7 @@ jobs:
               gh workflow run generic.yaml \
                 -f client="[$(quoted "${changed[@]}")]" \
                 -f simulator="[\"ethereum/eels/${sim}\"]" \
-                -f client_source=docker \
+                -f client_source="$CLIENT_SOURCE" \
                 -f concurrency_group="$cg"
             done < <(grep '^sim|' plan.txt)
           fi
