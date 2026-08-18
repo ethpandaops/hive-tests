@@ -18,6 +18,8 @@ jobs:
       group: watch-client-images
       cancel-in-progress: false
     steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - uses: AnimMouse/setup-rclone@0d99fa3878a334d3e307c1a8372ad55550fdaea7 # v1.11.0
         with:
           rclone_config: ${{ secrets.HIVE_RCLONE_CONFIG }}
@@ -26,84 +28,127 @@ jobs:
       - name: Fetch last-dispatched digests
         run: rclone cat "$STATE_REMOTE" > state.json 2>/dev/null || echo '{}' > state.json
 
+      - name: Derive the watch plan from the workflow files
+        run: |
+          python3 -c 'import yaml' 2>/dev/null || pip3 install --quiet pyyaml
+          python3 - <<'PY' > plan.txt
+          import glob, json, re, yaml
+
+          def inputs(path):
+              doc = yaml.safe_load(open(path))
+              # YAML 1.1 parses the "on" key as boolean True
+              return (doc.get(True) or doc.get("on"))["workflow_dispatch"]["inputs"]
+
+          def helper_key(client):
+              # hive client name -> client-config helper key
+              return {"go-ethereum": "geth", "nimbus-el": "nimbusel"}.get(client, client)
+
+          def unwrap(ref):
+              # the pull-through mirror serves Docker Hub content
+              prefix = "docker.ethquokkaops.io/dh/"
+              return ref[len(prefix):] if ref.startswith(prefix) else ref
+
+          # Devnet quick workflows: watch each client image at the
+          # workflow's own common_client_tag, dispatch that workflow.
+          for wf in sorted(glob.glob(".github/workflows/hive-*-quick.yaml")):
+              ins = inputs(wf)
+              tag = ins["common_client_tag"]["default"]
+              clients = [c.strip().strip('"') for c in ins["client"]["default"].split(",")]
+              images = json.loads(ins["client_images"]["default"])
+              for c in clients:
+                  base = unwrap(images[helper_key(c)])
+                  print(f"quick|{wf.rsplit('/', 1)[-1]}|{c}|{base.rsplit(':', 1)[0]}:{tag}")
+
+          # Generic: watch each client image at its default tag,
+          # dispatch generic.yaml per eels simulator wrapper.
+          ins = inputs(".github/workflows/generic.yaml")
+          clients = json.loads(ins["client"]["default"])
+          images = json.loads(ins["client_config"]["default"])["images"]
+          for c in clients:
+              print(f"generic|generic.yaml|{c}|{unwrap(images[helper_key(c)])}")
+          for wf in sorted(glob.glob(".github/workflows/sim-ethereum-eels-*.yaml")):
+              text = open(wf).read()
+              sim = re.search(r"ethereum/eels/([a-z-]+)", text).group(1)
+              cg = re.search(r"concurrency_group: '([^']+)'", text).group(1)
+              print(f"sim|{sim}|{cg}")
+          PY
+          cat plan.txt
+
       - name: Dispatch runs for clients with updated images
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          # Echo the hive client names whose ethpandaops image digest changed
-          # since the last dispatch, updating state.json as it goes.
-          # Entries are <hive client>:<docker repository>:<tag>.
+          # Registry-agnostic digest lookup via manifest HEAD (not counted
+          # toward Docker Hub pull limits). Empty output = skip this tick.
+          digest_for() {
+            tag=${1##*:}
+            path=${1%:*}
+            case "$path" in
+              ghcr.io/*)
+                host=ghcr.io
+                repo=${path#ghcr.io/}
+                token_url="https://ghcr.io/token?scope=repository:${repo}:pull"
+                ;;
+              */*/*)
+                echo "unsupported registry: $1" >&2
+                return 0
+                ;;
+              *)
+                host=registry-1.docker.io
+                repo=$path
+                token_url="https://auth.docker.io/token?service=registry.docker.io&scope=repository:${repo}:pull"
+                ;;
+            esac
+            tok=$(curl -sf "$token_url" | jq -r '.token // empty')
+            [ -z "$tok" ] && return 0
+            curl -sfI -H "Authorization: Bearer $tok" \
+              -H "Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json, application/vnd.oci.image.manifest.v1+json" \
+              "https://${host}/v2/${repo}/manifests/${tag}" \
+              | tr -d '\r' | awk 'tolower($1) == "docker-content-digest:" {print $2}'
+          }
+          quoted() { printf '"%s",' "$@" | sed 's/,$//'; }
+
+          # detect <state key prefix> <plan line>...: echo changed clients,
+          # updating state.json as it goes.
           detect() {
-            key=$1; shift
-            for entry in "$@"; do
-              client=${entry%%:*}
-              rest=${entry#*:}
-              image=${rest%%:*}
-              tag=${rest##*:}
-              digest=$(curl -sf "https://hub.docker.com/v2/repositories/ethpandaops/${image}/tags/${tag}" \
-                | jq -r '.digest // empty')
-              [ -z "$digest" ] && continue  # image missing or Hub hiccup: retry next tick
-              prev=$(jq -r --arg k "${key}/${client}" '.[$k] // empty' state.json)
+            prefix=$1; shift
+            for line in "$@"; do
+              client=$(echo "$line" | cut -d'|' -f3)
+              ref=$(echo "$line" | cut -d'|' -f4)
+              digest=$(digest_for "$ref")
+              [ -z "$digest" ] && continue  # image missing or registry hiccup: retry next tick
+              prev=$(jq -r --arg k "${prefix}/${client}" '.[$k] // empty' state.json)
               if [ "$digest" != "$prev" ]; then
                 echo "$client"
-                jq --arg k "${key}/${client}" --arg d "$digest" '.[$k] = $d' state.json > state.tmp
+                jq --arg k "${prefix}/${client}" --arg d "$digest" '.[$k] = $d' state.json > state.tmp
                 mv state.tmp state.json
               fi
             done
           }
-          quoted() { printf '"%s",' "$@" | sed 's/,$//'; }
 
-          # Devnet branches -> their quick workflows. Clients without a
-          # devnet image (branch not pushed yet) are skipped by detect().
-          g8=($(detect glamsterdam-devnet-8 \
-            go-ethereum:geth:glamsterdam-devnet-8 \
-            besu:besu:glamsterdam-devnet-8 \
-            reth:reth:glamsterdam-devnet-8 \
-            nethermind:nethermind:glamsterdam-devnet-8 \
-            erigon:erigon:glamsterdam-devnet-8 \
-            nimbus-el:nimbus-eth1:glamsterdam-devnet-8 \
-            ethrex:ethrex:glamsterdam-devnet-8))
-          if [ ${#g8[@]} -gt 0 ]; then
-            echo "glamsterdam-devnet-8: ${g8[*]}"
-            gh workflow run hive-glamsterdam-devnet-8-quick.yaml \
-              -f client="$(quoted "${g8[@]}")" \
-              -f client_source=docker \
-              -f common_client_tag=glamsterdam-devnet-8
-          fi
+          for wf in $(grep '^quick|' plan.txt | cut -d'|' -f2 | sort -u); do
+            IFS=$'\n' lines=($(grep "^quick|${wf}|" plan.txt)); unset IFS
+            changed=($(detect "$wf" "${lines[@]}"))
+            if [ ${#changed[@]} -gt 0 ]; then
+              echo "${wf}: dispatching ${changed[*]}"
+              gh workflow run "$wf" \
+                -f client="$(quoted "${changed[@]}")" \
+                -f client_source=docker
+            fi
+          done
 
-          fr=($(detect frames-devnet-0 \
-            go-ethereum:geth:frames-devnet-0 \
-            nethermind:nethermind:frames-devnet-0 \
-            ethrex:ethrex:frames-devnet-0))
-          if [ ${#fr[@]} -gt 0 ]; then
-            echo "frames-devnet-0: ${fr[*]}"
-            gh workflow run hive-frames-devnet-0-quick.yaml \
-              -f client="$(quoted "${fr[@]}")" \
-              -f client_source=docker \
-              -f common_client_tag=frames-devnet-0
-          fi
-
-          # Client master/main branches -> the eels simulators on generic,
-          # one dispatch per simulator so each shares its daily wrapper's
-          # concurrency group (sim-ethereum-eels-*.yaml).
-          gm=($(detect generic \
-            go-ethereum:geth:master \
-            besu:besu:main \
-            reth:reth:main \
-            nethermind:nethermind:master \
-            erigon:erigon:main \
-            nimbus-el:nimbus-eth1:master \
-            ethrex:ethrex:main))
-          if [ ${#gm[@]} -gt 0 ]; then
-            echo "generic: ${gm[*]}"
-            for sim in consume-engine consume-rlp consume-enginex; do
+          IFS=$'\n' lines=($(grep '^generic|' plan.txt)); unset IFS
+          changed=($(detect generic.yaml "${lines[@]}"))
+          if [ ${#changed[@]} -gt 0 ]; then
+            echo "generic.yaml: dispatching ${changed[*]}"
+            while IFS='|' read -r _ sim cg; do
               gh workflow run generic.yaml \
-                -f client="[$(quoted "${gm[@]}")]" \
+                -f client="[$(quoted "${changed[@]}")]" \
                 -f simulator="[\"ethereum/eels/${sim}\"]" \
                 -f client_source=docker \
-                -f concurrency_group="eels-${sim}"
-            done
+                -f concurrency_group="$cg"
+            done < <(grep '^sim|' plan.txt)
           fi
 
           # Persist state only after the dispatches succeed: a duplicate
