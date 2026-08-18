@@ -1,7 +1,5 @@
 name: Hive - Frames Devnet 0
 on:
-  schedule:
-    - cron: "45 15 * * *"
   workflow_dispatch:
     # Note: We're limited to 10 inputs
     inputs:
@@ -30,6 +28,7 @@ on:
         options:
           - docker
           - git
+        default: docker
       common_client_tag:
         type: string
         description: >-
@@ -91,41 +90,14 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       # Hive version
-      hive_repo: >-
-        ${{
-          steps.client_config_schedule.outputs.hive_repo ||
-          steps.client_config_dispatch.outputs.hive_repo
-        }}
-      hive_tag: >-
-        ${{
-          steps.client_config_schedule.outputs.hive_tag ||
-          steps.client_config_dispatch.outputs.hive_tag
-        }}
+      hive_repo: ${{ steps.client_config_dispatch.outputs.hive_repo }}
+      hive_tag: ${{ steps.client_config_dispatch.outputs.hive_tag }}
       # client_config contains the YAML client config for Hive
-      client_config: >-
-        ${{
-          steps.client_config_schedule.outputs.client_config ||
-          steps.client_config_dispatch.outputs.client_config
-        }}
+      client_config: ${{ steps.client_config_dispatch.outputs.client_config }}
       # client_source to determine if we need docker auth
-      client_source: >-
-        ${{
-          github.event_name == 'schedule' && 'git' ||
-          inputs.client_source
-        }}
+      client_source: ${{ inputs.client_source }}
     steps:
       - uses: ethpandaops/hive-github-action/helpers/client-config@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
-        if: github.event_name == 'schedule'
-        name: "Client config: schedule"
-        id: client_config_schedule
-        with:
-          common_client_tag: "frames-devnet-0"
-          client_source: "git"
-          hive_version: "ethereum/hive@master"
-          goproxy: ${{ env.GOPROXY }}
-
-      - uses: ethpandaops/hive-github-action/helpers/client-config@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
-        if: github.event_name == 'workflow_dispatch'
         name: "Client config: workflow_dispatch"
         id: client_config_dispatch
         with:
@@ -151,8 +123,8 @@ jobs:
         'ubuntu-latest'
       }}
     concurrency:
-      # Constant prefix so scheduled and dispatched runs share the same
-      # per-client+simulator queue (new runs wait for the previous one).
+      # Constant prefix so all runs share the same per-client+simulator
+      # queue (new runs wait for the previous one).
       group: >-
         hive-frames-devnet-0-${{ matrix.client }}-${{ matrix.simulator }}
     strategy:
