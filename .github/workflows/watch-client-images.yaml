@@ -71,6 +71,7 @@ jobs:
               | tr -d '\r' | awk 'tolower($1) == "docker-content-digest:" {print $2}'
           }
           quoted() { printf '"%s",' "$@" | sed 's/,$//'; }
+          CLIENT_SOURCE="${CLIENT_SOURCE:-docker}"
 
           # detect <state key prefix> <plan line>...: echo changed clients,
           # updating state.json as it goes.

@@ -13,9 +13,8 @@ jobs:
       - name: Lint workflow files
         uses: docker://rhysd/actionlint:1.7.7
         with:
-          # generic.yaml predates the linter with 11 dispatch inputs (limit
-          # 10); API dispatches work, so ignored until trimmed deliberately.
-          args: -color -shellcheck= -ignore 'maximum number of inputs'
+          # docker action args are whitespace-split: no quoted flags here
+          args: -color -shellcheck=
 
   watch-plan:
     runs-on: ubuntu-latest
