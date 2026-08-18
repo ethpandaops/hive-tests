@@ -8,9 +8,7 @@ permissions:
   actions: write
 
 env:
-  IMAGE_TAG: glamsterdam-devnet-8
-  TARGET_WORKFLOW: hive-glamsterdam-devnet-8-quick.yaml
-  STATE_REMOTE: s3:hive-results/glamsterdam-quick/image-digests.json
+  STATE_REMOTE: s3:hive-results/image-digests.json
   INSTALL_RCLONE_VERSION: v1.68.2
 
 jobs:
@@ -33,34 +31,82 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          # hive client name -> ethpandaops Docker Hub repository
-          CLIENTS="go-ethereum:geth besu:besu reth:reth nethermind:nethermind
-                   erigon:erigon nimbus-el:nimbus-eth1 ethrex:ethrex"
-          changed=()
-          for pair in $CLIENTS; do
-            client=${pair%%:*}
-            image=${pair##*:}
-            digest=$(curl -sf "https://hub.docker.com/v2/repositories/ethpandaops/${image}/tags/${IMAGE_TAG}" \
-              | jq -r '.digest // empty')
-            [ -z "$digest" ] && continue  # tag missing or Hub hiccup: retry next tick
-            prev=$(jq -r --arg c "$client" '.[$c] // empty' state.json)
-            if [ "$digest" != "$prev" ]; then
-              changed+=("$client")
-              jq --arg c "$client" --arg d "$digest" '.[$c] = $d' state.json > state.tmp
-              mv state.tmp state.json
-            fi
-          done
-          if [ ${#changed[@]} -eq 0 ]; then
-            echo "No image changes."
-            exit 0
+          # Echo the hive client names whose ethpandaops image digest changed
+          # since the last dispatch, updating state.json as it goes.
+          # Entries are <hive client>:<docker repository>:<tag>.
+          detect() {
+            key=$1; shift
+            for entry in "$@"; do
+              client=${entry%%:*}
+              rest=${entry#*:}
+              image=${rest%%:*}
+              tag=${rest##*:}
+              digest=$(curl -sf "https://hub.docker.com/v2/repositories/ethpandaops/${image}/tags/${tag}" \
+                | jq -r '.digest // empty')
+              [ -z "$digest" ] && continue  # image missing or Hub hiccup: retry next tick
+              prev=$(jq -r --arg k "${key}/${client}" '.[$k] // empty' state.json)
+              if [ "$digest" != "$prev" ]; then
+                echo "$client"
+                jq --arg k "${key}/${client}" --arg d "$digest" '.[$k] = $d' state.json > state.tmp
+                mv state.tmp state.json
+              fi
+            done
+          }
+          quoted() { printf '"%s",' "$@" | sed 's/,$//'; }
+
+          # Devnet branches -> their quick workflows. Clients without a
+          # devnet image (branch not pushed yet) are skipped by detect().
+          g8=($(detect glamsterdam-devnet-8 \
+            go-ethereum:geth:glamsterdam-devnet-8 \
+            besu:besu:glamsterdam-devnet-8 \
+            reth:reth:glamsterdam-devnet-8 \
+            nethermind:nethermind:glamsterdam-devnet-8 \
+            erigon:erigon:glamsterdam-devnet-8 \
+            nimbus-el:nimbus-eth1:glamsterdam-devnet-8 \
+            ethrex:ethrex:glamsterdam-devnet-8))
+          if [ ${#g8[@]} -gt 0 ]; then
+            echo "glamsterdam-devnet-8: ${g8[*]}"
+            gh workflow run hive-glamsterdam-devnet-8-quick.yaml \
+              -f client="$(quoted "${g8[@]}")" \
+              -f client_source=docker \
+              -f common_client_tag=glamsterdam-devnet-8
           fi
-          client_list=$(printf '"%s",' "${changed[@]}")
-          echo "Dispatching for: ${client_list%,}"
-          gh workflow run "$TARGET_WORKFLOW" \
-            -f client="${client_list%,}" \
-            -f client_source=docker \
-            -f common_client_tag="$IMAGE_TAG"
-          # Persist state only after a successful dispatch: a duplicate dispatch
-          # on the next tick is collapsed by the target's per-client+simulator
+
+          fr=($(detect frames-devnet-0 \
+            go-ethereum:geth:frames-devnet-0 \
+            nethermind:nethermind:frames-devnet-0 \
+            ethrex:ethrex:frames-devnet-0))
+          if [ ${#fr[@]} -gt 0 ]; then
+            echo "frames-devnet-0: ${fr[*]}"
+            gh workflow run hive-frames-devnet-0-quick.yaml \
+              -f client="$(quoted "${fr[@]}")" \
+              -f client_source=docker \
+              -f common_client_tag=frames-devnet-0
+          fi
+
+          # Client master/main branches -> the eels simulators on generic,
+          # one dispatch per simulator so each shares its daily wrapper's
+          # concurrency group (sim-ethereum-eels-*.yaml).
+          gm=($(detect generic \
+            go-ethereum:geth:master \
+            besu:besu:main \
+            reth:reth:main \
+            nethermind:nethermind:master \
+            erigon:erigon:main \
+            nimbus-el:nimbus-eth1:master \
+            ethrex:ethrex:main))
+          if [ ${#gm[@]} -gt 0 ]; then
+            echo "generic: ${gm[*]}"
+            for sim in consume-engine consume-rlp consume-enginex; do
+              gh workflow run generic.yaml \
+                -f client="[$(quoted "${gm[@]}")]" \
+                -f simulator="[\"ethereum/eels/${sim}\"]" \
+                -f client_source=docker \
+                -f concurrency_group="eels-${sim}"
+            done
+          fi
+
+          # Persist state only after the dispatches succeed: a duplicate
+          # dispatch next tick is collapsed by the per-client+simulator
           # concurrency groups, a missed dispatch is not recovered.
           rclone rcat "$STATE_REMOTE" < state.json
