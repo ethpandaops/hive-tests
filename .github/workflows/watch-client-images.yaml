@@ -90,21 +90,13 @@ jobs:
             done
           }
 
-          # A workflow's test content (hive version, eels branch head,
-          # fixtures) changing re-dispatches it for every client: clear its
-          # state so detect() sees all its existing images as changed.
-          head_sha() {
-            gh api "repos/$1/commits/$2" --jq .sha 2>/dev/null || echo unknown
-          }
+          # A workflow's test content changing in the file (hive version,
+          # eels branch, fixtures) re-dispatches it for every client: clear
+          # its state so detect() sees all its existing images as changed.
+          # Deliberate edits only — eels/hive branch heads moving do not
+          # re-trigger; the scheduled runs cover tip drift.
           while IFS='|' read -r _ wf hive_ref branch fixtures; do
-            hive_sha=$(head_sha "${hive_ref%@*}" "${hive_ref#*@}")
-            if [ -n "$branch" ]; then
-              eels_sha=$(head_sha ethereum/execution-specs "$branch")
-            else
-              eels_sha="-"
-            fi
-            val="${hive_sha}|${eels_sha}|${fixtures}"
-            case "$val" in *unknown*) continue;; esac  # API hiccup: retry next tick
+            val="${hive_ref}|${branch}|${fixtures}"
             key="${wf}/__content__"
             prev=$(jq -r --arg k "$key" '.[$k] // empty' state.json)
             if [ "$val" != "$prev" ]; then
