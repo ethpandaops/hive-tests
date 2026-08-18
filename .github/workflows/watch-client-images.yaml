@@ -48,16 +48,16 @@ jobs:
               prefix = "docker.ethquokkaops.io/dh/"
               return ref[len(prefix):] if ref.startswith(prefix) else ref
 
-          # Devnet quick workflows: watch each client image at the
-          # workflow's own common_client_tag, dispatch that workflow.
-          for wf in sorted(glob.glob(".github/workflows/hive-*-quick.yaml")):
+          # Devnet workflows (full and quick): watch each client image at
+          # the workflow's own common_client_tag, dispatch that workflow.
+          for wf in sorted(glob.glob(".github/workflows/hive-*.yaml")):
               ins = inputs(wf)
               tag = ins["common_client_tag"]["default"]
               clients = [c.strip().strip('"') for c in ins["client"]["default"].split(",")]
               images = json.loads(ins["client_images"]["default"])
               for c in clients:
                   base = unwrap(images[helper_key(c)])
-                  print(f"quick|{wf.rsplit('/', 1)[-1]}|{c}|{base.rsplit(':', 1)[0]}:{tag}")
+                  print(f"hive|{wf.rsplit('/', 1)[-1]}|{c}|{base.rsplit(':', 1)[0]}:{tag}")
 
           # Generic: watch each client image at its default tag,
           # dispatch generic.yaml per eels simulator wrapper.
@@ -127,8 +127,8 @@ jobs:
             done
           }
 
-          for wf in $(grep '^quick|' plan.txt | cut -d'|' -f2 | sort -u); do
-            IFS=$'\n' lines=($(grep "^quick|${wf}|" plan.txt)); unset IFS
+          for wf in $(grep '^hive|' plan.txt | cut -d'|' -f2 | sort -u); do
+            IFS=$'\n' lines=($(grep "^hive|${wf}|" plan.txt)); unset IFS
             changed=($(detect "$wf" "${lines[@]}"))
             if [ ${#changed[@]} -gt 0 ]; then
               echo "${wf}: dispatching ${changed[*]}"
