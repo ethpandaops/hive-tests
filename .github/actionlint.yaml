@@ -1,0 +1,6 @@
+self-hosted-runner:
+  labels:
+    - self-hosted-ghr-size-ccx33-x64
+    - self-hosted-ghr-size-m-x64
+    - self-hosted-ghr-size-xl-do-x64
+    - self-hosted-ghr-size-xl-x64
