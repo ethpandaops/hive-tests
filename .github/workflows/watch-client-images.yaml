@@ -6,6 +6,7 @@ on:
 
 permissions:
   actions: write
+  contents: read
 
 env:
   STATE_REMOTE: s3:hive-results/image-digests.json
@@ -96,26 +97,35 @@ jobs:
           # exist yet — e.g. a bump merged before the release was cut. It
           # is re-checked every tick and picks up on its own once cut.
           ready=""
-          while IFS='|' read -r _ wf branch fixtures; do
+          while IFS='|' read -r _ wf branch fixtures fingerprint; do
             if [ -n "$fixtures" ] && ! curl -sfIL -o /dev/null "$fixtures"; then
               echo "${wf}: fixtures not available yet, skipping (${fixtures})"
               continue
             fi
-            if [ -n "$branch" ] && ! gh api "repos/ethereum/execution-specs/branches/${branch}" >/dev/null 2>&1; then
-              echo "${wf}: eels branch ${branch} not found, skipping"
-              continue
+            if [ -n "$branch" ]; then
+              # anonymous git endpoint: no token scope or API rate limits;
+              # empty output = branch missing, non-zero exit = network error
+              if ! heads=$(git ls-remote --heads https://github.com/ethereum/execution-specs.git "refs/heads/${branch}" 2>/dev/null); then
+                echo "${wf}: branch lookup failed, skipping this tick"
+                continue
+              fi
+              if [ -z "$heads" ]; then
+                echo "${wf}: eels branch ${branch} not found, skipping"
+                continue
+              fi
             fi
             ready="$ready $wf"
           done < <(grep '^content|' plan.txt)
           is_ready() { case " $ready " in *" $1 "*) return 0;; *) return 1;; esac; }
 
           # A workflow's test content changing in the file (eels branch,
-          # fixtures) re-dispatches it for every client: clear its state so
-          # detect() sees all its existing images as changed. Deliberate
-          # edits only — eels branch heads moving do not re-trigger.
-          while IFS='|' read -r _ wf branch fixtures; do
+          # fixtures, test env or simulators — the fingerprint) re-dispatches
+          # it for every client: clear its state so detect() sees all its
+          # existing images as changed. Deliberate edits only — eels branch
+          # heads moving do not re-trigger.
+          while IFS='|' read -r _ wf branch fixtures fingerprint; do
             is_ready "$wf" || continue
-            val="${branch}|${fixtures}"
+            val="${branch}|${fixtures}|${fingerprint}"
             key="${wf}/__content__"
             prev=$(jq -r --arg k "$key" '.[$k] // empty' state.json)
             if [ "$val" != "$prev" ]; then
