@@ -219,3 +219,28 @@ jobs:
           rclone_version: ${{ env.INSTALL_RCLONE_VERSION }}
           workflow_artifact_upload: true
           website_upload: true
+          website_index_generation: false
+
+  index:
+    needs: test
+    # not always(): index after failures (successful jobs uploaded results)
+    # but not after cancellation
+    if: ${{ !cancelled() }}
+    runs-on: self-hosted-ghr-size-ccx33-x64
+    concurrency:
+      group: "generate-index-hive-results-glamsterdam"
+      cancel-in-progress: true
+    steps:
+      - uses: ethpandaops/hive-github-action/helpers/self-hosted-runner-dependencies@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
+        if: runner.environment != 'github-hosted'
+      - uses: ethpandaops/hive-github-action@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
+        with:
+          skip_tests: true
+          s3_upload: true
+          s3_bucket: ${{ env.S3_BUCKET }}
+          s3_path: ${{ env.S3_PATH }}
+          rclone_config: ${{ secrets.HIVE_RCLONE_CONFIG }}
+          rclone_version: ${{ env.INSTALL_RCLONE_VERSION }}
+          website_upload: false
+          website_listing_limit: '5000'
+          website_index_generation: true

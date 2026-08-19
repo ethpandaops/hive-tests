@@ -22,8 +22,20 @@ env:
 jobs:
   generate-index:
     runs-on: self-hosted-ghr-size-ccx33-x64
+    strategy:
+      fail-fast: false
+      matrix:
+        # Scheduled runs reindex every results path so uploads never wait on
+        # the per-run index job of a still-running workflow; dispatches
+        # reindex the requested path only.
+        s3_path: >-
+          ${{
+            github.event_name == 'schedule' &&
+            fromJSON('["generic", "glamsterdam", "glamsterdam-quick", "frames", "frames-quick"]') ||
+            fromJSON(format('[{0}]', toJSON(inputs.s3-path || 'generic')))
+          }}
     concurrency:
-      group: "generate-index-${{ inputs.s3-bucket || 'hive-results' }}-${{ inputs.s3-path || 'generic' }}"
+      group: "generate-index-${{ inputs.s3-bucket || 'hive-results' }}-${{ matrix.s3_path }}"
       cancel-in-progress: true
 
     steps:
@@ -31,14 +43,14 @@ jobs:
       if: runner.environment != 'github-hosted'
 
     - name: Run Index Generator
-      uses: ethpandaops/hive-github-action@master # v0.6.0-unreleased
+      uses: ethpandaops/hive-github-action@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
       with:
         skip_tests: true
         s3_upload: true
         s3_bucket: ${{ inputs.s3-bucket || 'hive-results' }}
-        s3_path: ${{ inputs.s3-path || 'generic' }}
+        s3_path: ${{ matrix.s3_path }}
         rclone_config: ${{ secrets.HIVE_RCLONE_CONFIG }}
         rclone_version: ${{ env.INSTALL_RCLONE_VERSION }}
         website_upload: false
-        website_listing_limit: '3000'
+        website_listing_limit: '5000'
         website_index_generation: true
