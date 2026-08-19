@@ -1,8 +1,6 @@
 name: ethereum/eels/consume-rlp (eels/consume-rlp)
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "15 05 * * 2" # Every second day at 05:15 UTC
 
 jobs:
   trigger-generic:

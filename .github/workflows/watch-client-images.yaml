@@ -1,0 +1,170 @@
+name: Hive - Watch Client Images
+on:
+  schedule:
+    - cron: "*/20 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+env:
+  STATE_REMOTE: s3:hive-results/image-digests.json
+  INSTALL_RCLONE_VERSION: v1.68.2
+  # How dispatched runs source clients: 'docker' tests the exact image whose
+  # digest changed; 'git' builds the branch tip inside the run instead.
+  CLIENT_SOURCE: docker
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: watch-client-images
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: AnimMouse/setup-rclone@0d99fa3878a334d3e307c1a8372ad55550fdaea7 # v1.11.0
+        with:
+          rclone_config: ${{ secrets.HIVE_RCLONE_CONFIG }}
+          version: ${{ env.INSTALL_RCLONE_VERSION }}
+
+      - name: Fetch last-dispatched digests
+        run: rclone cat "$STATE_REMOTE" > state.json 2>/dev/null || echo '{}' > state.json
+
+      - name: Derive the watch plan from the workflow files
+        run: |
+          python3 -c 'import yaml' 2>/dev/null || pip3 install --quiet pyyaml
+          python3 .github/scripts/derive-watch-plan.py > plan.txt
+          cat plan.txt
+
+      - name: Dispatch runs for clients with updated images
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # Registry-agnostic digest lookup via manifest HEAD (not counted
+          # toward Docker Hub pull limits). Empty output = skip this tick.
+          digest_for() {
+            tag=${1##*:}
+            path=${1%:*}
+            case "$path" in
+              ghcr.io/*)
+                host=ghcr.io
+                repo=${path#ghcr.io/}
+                token_url="https://ghcr.io/token?scope=repository:${repo}:pull"
+                ;;
+              */*/*)
+                echo "unsupported registry: $1" >&2
+                return 0
+                ;;
+              *)
+                host=registry-1.docker.io
+                repo=$path
+                token_url="https://auth.docker.io/token?service=registry.docker.io&scope=repository:${repo}:pull"
+                ;;
+            esac
+            tok=$(curl -sf "$token_url" | jq -r '.token // empty')
+            [ -z "$tok" ] && return 0
+            curl -sfI -H "Authorization: Bearer $tok" \
+              -H "Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json, application/vnd.oci.image.manifest.v1+json" \
+              "https://${host}/v2/${repo}/manifests/${tag}" \
+              | tr -d '\r' | awk 'tolower($1) == "docker-content-digest:" {print $2}'
+          }
+          quoted() { printf '"%s",' "$@" | sed 's/,$//'; }
+          CLIENT_SOURCE="${CLIENT_SOURCE:-docker}"
+
+          # detect <state key prefix> <plan line>...: echo changed clients,
+          # updating state.json as it goes.
+          detect() {
+            prefix=$1; shift
+            for line in "$@"; do
+              client=$(echo "$line" | cut -d'|' -f3)
+              ref=$(echo "$line" | cut -d'|' -f4)
+              digest=$(digest_for "$ref")
+              [ -z "$digest" ] && continue  # image missing or registry hiccup: retry next tick
+              prev=$(jq -r --arg k "${prefix}/${client}" '.[$k] // empty' state.json)
+              if [ "$digest" != "$prev" ]; then
+                echo "$client"
+                jq --arg k "${prefix}/${client}" --arg d "$digest" '.[$k] = $d' state.json > state.tmp
+                mv state.tmp state.json
+              fi
+            done
+          }
+
+          # Skip a workflow entirely (no dispatches, no state updates, no
+          # failure) while its eels branch or fixtures release does not
+          # exist yet — e.g. a bump merged before the release was cut. It
+          # is re-checked every tick and picks up on its own once cut.
+          ready=""
+          while IFS='|' read -r _ wf branch fixtures; do
+            if [ -n "$fixtures" ] && ! curl -sfIL -o /dev/null "$fixtures"; then
+              echo "${wf}: fixtures not available yet, skipping (${fixtures})"
+              continue
+            fi
+            if [ -n "$branch" ]; then
+              # anonymous git endpoint: no token scope or API rate limits;
+              # empty output = branch missing, non-zero exit = network error
+              if ! heads=$(git ls-remote --heads https://github.com/ethereum/execution-specs.git "refs/heads/${branch}" 2>/dev/null); then
+                echo "${wf}: branch lookup failed, skipping this tick"
+                continue
+              fi
+              if [ -z "$heads" ]; then
+                echo "${wf}: eels branch ${branch} not found, skipping"
+                continue
+              fi
+            fi
+            ready="$ready $wf"
+          done < <(grep '^content|' plan.txt)
+          is_ready() { case " $ready " in *" $1 "*) return 0;; *) return 1;; esac; }
+
+          # A fixtures release or eels branch change in the workflow file
+          # re-dispatches it for every client: clear its state so detect()
+          # sees all its existing images as changed. Deliberate file edits
+          # only — eels branch heads moving do not re-trigger.
+          while IFS='|' read -r _ wf branch fixtures; do
+            is_ready "$wf" || continue
+            val="${branch}|${fixtures}"
+            key="${wf}/__content__"
+            prev=$(jq -r --arg k "$key" '.[$k] // empty' state.json)
+            if [ "$val" != "$prev" ]; then
+              echo "${wf}: test content changed, re-dispatching all clients"
+              jq --arg p "${wf}/" 'with_entries(select(.key | startswith($p) | not))' state.json > state.tmp
+              mv state.tmp state.json
+              jq --arg k "$key" --arg v "$val" '.[$k] = $v' state.json > state.tmp
+              mv state.tmp state.json
+            fi
+          done < <(grep '^content|' plan.txt)
+
+          for wf in $(grep '^hive|' plan.txt | cut -d'|' -f2 | sort -u); do
+            is_ready "$wf" || continue
+            IFS=$'\n' lines=($(grep "^hive|${wf}|" plan.txt)); unset IFS
+            changed=($(detect "$wf" "${lines[@]}"))
+            if [ ${#changed[@]} -gt 0 ]; then
+              echo "${wf}: dispatching ${changed[*]}"
+              gh workflow run "$wf" \
+                -f client="$(quoted "${changed[@]}")" \
+                -f client_source="$CLIENT_SOURCE"
+            fi
+          done
+
+          IFS=$'\n' lines=($(grep '^generic|' plan.txt)); unset IFS
+          changed=()
+          if is_ready generic.yaml; then
+            changed=($(detect generic.yaml "${lines[@]}"))
+          fi
+          if [ ${#changed[@]} -gt 0 ]; then
+            echo "generic.yaml: dispatching ${changed[*]}"
+            while IFS='|' read -r _ sim cg; do
+              gh workflow run generic.yaml \
+                -f client="[$(quoted "${changed[@]}")]" \
+                -f simulator="[\"ethereum/eels/${sim}\"]" \
+                -f client_source="$CLIENT_SOURCE" \
+                -f concurrency_group="$cg"
+            done < <(grep '^sim|' plan.txt)
+          fi
+
+          # Persist state only after the dispatches succeed: a duplicate
+          # dispatch next tick is collapsed by the per-client+simulator
+          # concurrency groups, a missed dispatch is not recovered.
+          rclone rcat "$STATE_REMOTE" < state.json

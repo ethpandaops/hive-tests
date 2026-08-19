@@ -1,8 +1,6 @@
 name: ethereum/eels/consume-engine (eels/consume-engine)
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "15 05 * * *" # Every day at 05:15 UTC
 
 jobs:
   trigger-generic:
