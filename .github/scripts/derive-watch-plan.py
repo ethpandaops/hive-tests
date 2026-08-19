@@ -48,7 +48,7 @@ def unwrap(ref):
 INFRA_ENV_PREFIXES = ("S3_", "INSTALL_", "GOPROXY")
 
 
-def content(path):
+def content(path, extra=()):
     # the eels branch/fixtures the sims build from, plus a fingerprint of
     # the rest of the test-relevant configuration
     doc = yaml.safe_load(open(path))
@@ -60,7 +60,7 @@ def content(path):
               if not k.startswith(INFRA_ENV_PREFIXES)}
     sims = inputs(path).get("simulator", {}).get("default", "")
     fingerprint = hashlib.sha256(
-        json.dumps([tested, sims], sort_keys=True).encode()
+        json.dumps([tested, sims, list(extra)], sort_keys=True).encode()
     ).hexdigest()[:16]
     name = path.rsplit("/", 1)[-1]
     return f"content|{name}|{branch}|{fixtures}|{fingerprint}"
@@ -85,9 +85,14 @@ clients = json.loads(ins["client"]["default"])
 images = json.loads(ins["client_config"]["default"])["images"]
 for c in clients:
     print(f"generic|generic.yaml|{c}|{unwrap(images[helper_key(c)])}")
-print(content(".github/workflows/generic.yaml"))
+sims = []
 for wf in sorted(glob.glob(".github/workflows/sim-ethereum-eels-*.yaml")):
     text = open(wf).read()
     sim = re.search(r"ethereum/eels/([a-z-]+)", text).group(1)
     cg = re.search(r"concurrency_group: '([^']+)'", text).group(1)
+    sims.append((sim, cg))
+# the eels wrappers define which simulators generic dispatches run, so
+# adding or editing one is a content change for generic
+print(content(".github/workflows/generic.yaml", extra=sims))
+for sim, cg in sims:
     print(f"sim|{sim}|{cg}")
