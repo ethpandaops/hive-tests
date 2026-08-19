@@ -182,7 +182,9 @@ jobs:
 
   index:
     needs: test
-    if: always()
+    # not always(): index after failures (successful jobs uploaded results)
+    # but not after cancellation
+    if: ${{ !cancelled() }}
     runs-on: self-hosted-ghr-size-ccx33-x64
     concurrency:
       group: "generate-index-hive-results-glamsterdam-quick"
