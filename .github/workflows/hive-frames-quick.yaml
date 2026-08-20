@@ -1,9 +1,8 @@
-name: Hive - Frames Devnet 0
+name: Hive - Frames Quick
 on:
   schedule:
-    - cron: "45 15 * * *"
+    - cron: "45 14 * * *"
   workflow_dispatch:
-    # Note: We're limited to 10 inputs
     inputs:
       client:
         type: string
@@ -60,8 +59,8 @@ env:
   GOPROXY: "${{ vars.GOPROXY }}"
   # Hive action environment variables
   S3_BUCKET: hive-results
-  S3_PATH: frames
-  S3_PUBLIC_URL: https://hive.ethpandaops.io/#/test/frames/
+  S3_PATH: frames-quick
+  S3_PUBLIC_URL: https://hive.ethpandaops.io/#/test/frames-quick/
   INSTALL_RCLONE_VERSION: v1.68.2
   # Flags used for all simulators
   GLOBAL_EXTRA_FLAGS: >-
@@ -75,7 +74,7 @@ env:
     --sim.parallelism=6
     --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
-    --sim.limit='.*fork_Bogota.*'
+    --sim.limit='.*8141.*'
     --sim.limit.exact=false
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-rlp simulator
@@ -83,7 +82,7 @@ env:
     --sim.parallelism=6
     --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
-    --sim.limit='.*fork_Bogota.*'
+    --sim.limit='.*8141.*'
     --sim.limit.exact=false
     --sim.loglevel=3
 
@@ -91,59 +90,28 @@ jobs:
   prepare:
     runs-on: ubuntu-latest
     outputs:
-      # Hive version
-      hive_repo: >-
-        ${{
-          steps.client_config_schedule.outputs.hive_repo ||
-          steps.client_config_dispatch.outputs.hive_repo
-        }}
-      hive_tag: >-
-        ${{
-          steps.client_config_schedule.outputs.hive_tag ||
-          steps.client_config_dispatch.outputs.hive_tag
-        }}
-      # client_config contains the YAML client config for Hive
-      client_config: >-
-        ${{
-          steps.client_config_schedule.outputs.client_config ||
-          steps.client_config_dispatch.outputs.client_config
-        }}
-      # client_source to determine if we need docker auth
-      client_source: >-
-        ${{
-          github.event_name == 'schedule' && 'git' ||
-          inputs.client_source
-        }}
+      hive_repo: ${{ steps.client_config.outputs.hive_repo }}
+      hive_tag: ${{ steps.client_config.outputs.hive_tag }}
+      client_config: ${{ steps.client_config.outputs.client_config }}
+      client_source: ${{ inputs.client_source || 'git' }}
     steps:
       - uses: ethpandaops/hive-github-action/helpers/client-config@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
-        if: github.event_name == 'schedule'
-        name: "Client config: schedule"
-        id: client_config_schedule
+        name: "Client config"
+        id: client_config
         with:
-          client_repos: |
-            {
-              "geth": "lightclient/go-ethereum@frames",
-              "nethermind": "NethermindEth/nethermind@feature/frames-devnet-0",
-              "ethrex": "lambdaclass/ethrex@frames-devnet-0"
-            }
-          client_source: "git"
-          hive_version: "ethereum/hive@master"
-          goproxy: ${{ env.GOPROXY }}
-
-      - uses: ethpandaops/hive-github-action/helpers/client-config@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
-        if: github.event_name == 'workflow_dispatch'
-        name: "Client config: workflow_dispatch"
-        id: client_config_dispatch
-        with:
-          client_repos: ${{ inputs.client_repos }}
+          client_repos: >-
+            ${{ inputs.client_repos ||
+            '{"geth": "lightclient/go-ethereum@frames",
+            "nethermind": "NethermindEth/nethermind@feature/frames-devnet-0",
+            "ethrex": "lambdaclass/ethrex@frames-devnet-0"}' }}
           client_images: ${{ inputs.client_images }}
           common_client_tag: ${{ inputs.common_client_tag }}
-          client_source: ${{ inputs.client_source }}
-          hive_version: ${{ inputs.hive_version }}
+          client_source: ${{ inputs.client_source || 'git' }}
+          hive_version: ${{ inputs.hive_version || 'ethereum/hive@master' }}
           goproxy: ${{ env.GOPROXY }}
 
   test:
-    timeout-minutes: 4320
+    timeout-minutes: 2160
     needs: prepare
     env:
       # BAL-specific environment variables
@@ -153,12 +121,12 @@ jobs:
       EELS_BUILD_ARG_BRANCH: "devnets/frames/0"
     runs-on: >-
       ${{
-        contains(matrix.simulator, 'ethereum/eels/') && 'self-hosted-ghr-size-ccx33-x64' ||
+        contains(matrix.simulator, 'ethereum/eels/') && 'self-hosted-ghr-size-xl-do-x64' ||
         'ubuntu-latest'
       }}
     concurrency:
       group: >-
-        ${{ github.head_ref || inputs || github.workflow }}-${{ matrix.client }}-${{ matrix.simulator }}
+        ${{ github.head_ref || inputs }}-${{ matrix.client }}-${{ matrix.simulator }}-quick
     strategy:
       fail-fast: false
       matrix:
