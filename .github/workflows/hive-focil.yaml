@@ -1,4 +1,4 @@
-name: Hive - Focil Devnet 0
+name: Hive - Focil
 on:
   schedule:
     - cron: "45 17 * * *"

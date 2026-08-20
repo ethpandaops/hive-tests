@@ -1,4 +1,4 @@
-name: Hive - Frames Devnet 0 Quick
+name: Hive - Frames Quick
 on:
   schedule:
     - cron: "45 14 * * *"
