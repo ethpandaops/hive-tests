@@ -22,26 +22,26 @@ on:
         description: GitHub repository and tag for hive (repo@tag)
       client_source:
         type: choice
-        default: docker
+        default: git
         description: >-
           How client images should be sourced.
           'git' will use the github repo and tag (See client_repos).
           'docker' will use the docker registry and tag (See client_images).
         options:
-          - docker
           - git
+          - docker
       common_client_tag:
         type: string
         description: >-
           If provided, this tag will be used for all clients, overriding individual tags/branches in client_repos and client_images
-        default: "frames-devnet-0"
+        default: ""
       client_repos:
         type: string
         default: |
           {
-            "geth": "ethereum/go-ethereum@master",
-            "nethermind": "NethermindEth/nethermind@master",
-            "ethrex": "lambdaclass/ethrex@main"
+            "geth": "lightclient/go-ethereum@frames",
+            "nethermind": "NethermindEth/nethermind@feature/frames-devnet-0",
+            "ethrex": "lambdaclass/ethrex@frames-devnet-0"
           }
         description: 'JSON object containing client versions in format {"client": "repo@tag", ...}'
       client_images:
@@ -99,9 +99,13 @@ jobs:
         name: "Client config"
         id: client_config
         with:
-          client_repos: ${{ inputs.client_repos }}
+          client_repos: >-
+            ${{ inputs.client_repos ||
+            '{"geth": "lightclient/go-ethereum@frames",
+            "nethermind": "NethermindEth/nethermind@feature/frames-devnet-0",
+            "ethrex": "lambdaclass/ethrex@frames-devnet-0"}' }}
           client_images: ${{ inputs.client_images }}
-          common_client_tag: ${{ inputs.common_client_tag || 'frames-devnet-0' }}
+          common_client_tag: ${{ inputs.common_client_tag }}
           client_source: ${{ inputs.client_source || 'git' }}
           hive_version: ${{ inputs.hive_version || 'ethereum/hive@master' }}
           goproxy: ${{ env.GOPROXY }}
