@@ -4,6 +4,12 @@ on:
     - cron: "45 16 * * *"
   workflow_dispatch:
     inputs:
+      fixtures_tag:
+        type: string
+        default: ""
+        description: >-
+          Pin a fixtures release tag e.g. tests-focil-devnet@v0.1.0.
+          Empty resolves the greatest published tests-focil-devnet tag.
       client:
         type: string
         default: '"besu","nethermind","ethrex","nimbus-el"'
@@ -120,7 +126,6 @@ jobs:
       # BAL-specific environment variables
       HIVE_PARALLEL_TX_PROCESSING_DISABLED: "true"
       HIVE_AMSTERDAM_TIMESTAMP: "1777456800"
-      EELS_BUILD_ARG_FIXTURES: "https://github.com/ethereum/execution-specs/releases/download/tests-focil-devnet@v0.2.0/fixtures_focil-devnet.tar.gz"
       EELS_BUILD_ARG_BRANCH: "devnets/focil/0"
     runs-on: >-
       ${{
@@ -147,6 +152,14 @@ jobs:
           '))}}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Resolve fixtures release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FIXTURES_TAG: ${{ inputs.fixtures_tag }}
+        run: |
+          python3 .github/scripts/resolve_fixtures_release.py \
+            --prefix tests-focil-devnet \
+            --asset fixtures_focil-devnet.tar.gz
       - uses: ethpandaops/hive-github-action/helpers/self-hosted-runner-dependencies@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
         if: runner.environment != 'github-hosted'
       - uses: ethpandaops/actions/docker-login@a91b7a8dd6a264f5e845ac2aa52d2d6f24e6d01d
