@@ -7,8 +7,8 @@ on:
     inputs:
       client:
         type: string
-        default: '"go-ethereum","nethermind","nimbus-el","erigon","besu","reth","ethrex"'
-        description: Comma-separated list of clients to test .e.g go-ethereum, besu, reth, nethermind, erigon, nimbus-el, ethrex
+        default: '"go-ethereum","nethermind","nimbus-el","erigon","besu","reth","ethrex","eels"'
+        description: Comma-separated list of clients to test .e.g go-ethereum, besu, reth, nethermind, erigon, nimbus-el, ethrex, eels
       simulator:
         type: string
         default: >-
@@ -182,7 +182,8 @@ jobs:
             "reth",
             "nimbus-el",
             "erigon",
-            "ethrex"
+            "ethrex",
+            "eels"
           '))}}
         simulator: >-
           ${{ fromJSON(format('[{0}]', inputs.simulator || '
@@ -190,6 +191,11 @@ jobs:
             "ethereum/eels/consume-rlp",
             "ethereum/eels/execute-blobs"
           '))}}
+        exclude:
+          - client: eels
+            simulator: ethereum/eels/consume-rlp
+          - client: eels
+            simulator: ethereum/eels/execute-blobs
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ethpandaops/hive-github-action/helpers/self-hosted-runner-dependencies@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
