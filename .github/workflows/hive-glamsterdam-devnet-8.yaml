@@ -31,11 +31,6 @@ on:
         options:
           - docker
           - git
-      common_client_tag:
-        type: string
-        description: >-
-          If provided, this tag will be used for all clients, overriding individual tags/branches in client_repos and client_images
-        default: "glamsterdam-devnet-8"
       client_repos:
         type: string
         default: |
@@ -55,11 +50,11 @@ on:
           {
             "geth": "docker.ethquokkaops.io/dh/ethpandaops/geth:master",
             "besu": "docker.ethquokkaops.io/dh/ethpandaops/besu:main",
-            "reth": "docker.ethquokkaops.io/dh/ethpandaops/reth:main",
+            "reth": "docker.ethquokkaops.io/dh/ethpandaops/reth:glamsterdam-devnet-8",
             "nethermind": "docker.ethquokkaops.io/dh/ethpandaops/nethermind:master",
-            "erigon": "docker.ethquokkaops.io/dh/ethpandaops/erigon:main",
+            "erigon": "docker.ethquokkaops.io/dh/ethpandaops/erigon:glamsterdam-devnet-8",
             "nimbusel": "docker.ethquokkaops.io/dh/ethpandaops/nimbus-eth1:master",
-            "ethrex": "docker.ethquokkaops.io/dh/ethpandaops/ethrex:main"
+            "ethrex": "docker.ethquokkaops.io/dh/ethpandaops/ethrex:glamsterdam-devnet-8"
           }
         description: 'JSON object containing client docker images in format {"client": "registry:tag", ...}'
 
@@ -127,7 +122,7 @@ jobs:
       # client_source to determine if we need docker auth
       client_source: >-
         ${{
-          github.event_name == 'schedule' && 'git' ||
+          github.event_name == 'schedule' && 'docker' ||
           inputs.client_source
         }}
     steps:
@@ -136,8 +131,17 @@ jobs:
         name: "Client config: schedule"
         id: client_config_schedule
         with:
-          common_client_tag: "glamsterdam-devnet-8"
-          client_source: "git"
+          client_images: |
+            {
+              "geth": "docker.ethquokkaops.io/dh/ethpandaops/geth:master",
+              "besu": "docker.ethquokkaops.io/dh/ethpandaops/besu:main",
+              "reth": "docker.ethquokkaops.io/dh/ethpandaops/reth:glamsterdam-devnet-8",
+              "nethermind": "docker.ethquokkaops.io/dh/ethpandaops/nethermind:master",
+              "erigon": "docker.ethquokkaops.io/dh/ethpandaops/erigon:glamsterdam-devnet-8",
+              "nimbusel": "docker.ethquokkaops.io/dh/ethpandaops/nimbus-eth1:master",
+              "ethrex": "docker.ethquokkaops.io/dh/ethpandaops/ethrex:glamsterdam-devnet-8"
+            }
+          client_source: "docker"
           hive_version: "ethereum/hive@master"
           goproxy: ${{ env.GOPROXY }}
 
@@ -148,7 +152,6 @@ jobs:
         with:
           client_repos: ${{ inputs.client_repos }}
           client_images: ${{ inputs.client_images }}
-          common_client_tag: ${{ inputs.common_client_tag }}
           client_source: ${{ inputs.client_source }}
           hive_version: ${{ inputs.hive_version }}
           goproxy: ${{ env.GOPROXY }}
