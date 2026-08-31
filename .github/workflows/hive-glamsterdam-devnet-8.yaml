@@ -163,7 +163,7 @@ jobs:
       # BAL-specific environment variables
       HIVE_PARALLEL_TX_PROCESSING_DISABLED: "true"
       HIVE_AMSTERDAM_TIMESTAMP: "1777456800"
-      EELS_BUILD_ARG_FIXTURES: "https://github.com/ethereum/execution-specs/releases/download/tests-glamsterdam-devnet@v8.1.2/fixtures_glamsterdam-devnet.tar.gz"
+      EELS_BUILD_ARG_FIXTURES: "https://github.com/ethereum/execution-specs/releases/download/tests-glamsterdam-devnet@v8.1.3/fixtures_glamsterdam-devnet.tar.gz"
       EELS_BUILD_ARG_BRANCH: "devnets/glamsterdam/8"
     runs-on: >-
       ${{
