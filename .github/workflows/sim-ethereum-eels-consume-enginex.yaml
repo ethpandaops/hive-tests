@@ -18,6 +18,7 @@ jobs:
               workflow_id: 'generic.yaml',
               ref: 'master',
               inputs: {
+                client: '["go-ethereum","reth","nethermind","nimbus-el","besu","erigon"]',
                 simulator: '["ethereum/eels/consume-enginex"]',
                 concurrency_group: 'eels-consume-enginex',
                 timeout_minutes: '1680'
