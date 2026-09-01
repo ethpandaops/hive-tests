@@ -13,8 +13,8 @@ on:
           Empty resolves the greatest published tests-focil-devnet tag.
       client:
         type: string
-        default: '"besu","nethermind","ethrex","nimbus-el"'
-        description: Comma-separated list of clients to test .e.g besu, nethermind, ethrex, nimbus-el
+        default: '"besu","nethermind","ethrex","nimbus-el","reth"'
+        description: Comma-separated list of clients to test .e.g besu, nethermind, ethrex, nimbus-el, reth
       simulator:
         type: string
         default: >-
@@ -49,7 +49,8 @@ on:
             "besu": "hyperledger/besu@focil-devnet-0",
             "nethermind": "NethermindEth/nethermind@feature/eip-7805",
             "ethrex": "lambdaclass/ethrex@focil-devnet-0",
-            "nimbusel": "status-im/nimbus-eth1@focil-devnet-0"
+            "nimbusel": "status-im/nimbus-eth1@focil-devnet-0",
+            "reth": "paradigmxyz/reth@focil-devnet-0"
           }
         description: 'JSON object containing client versions in format {"client": "repo@tag", ...}'
       client_images:
@@ -59,7 +60,8 @@ on:
             "besu": "docker.ethquokkaops.io/dh/ethpandaops/besu:main",
             "nethermind": "docker.ethquokkaops.io/dh/ethpandaops/nethermind:master",
             "ethrex": "docker.ethquokkaops.io/dh/ethpandaops/ethrex:main",
-            "nimbusel": "docker.ethquokkaops.io/dh/ethpandaops/nimbus-eth1:master"
+            "nimbusel": "docker.ethquokkaops.io/dh/ethpandaops/nimbus-eth1:master",
+            "reth": "docker.ethquokkaops.io/dh/ethpandaops/reth:main"
           }
         description: 'JSON object containing client docker images in format {"client": "registry:tag", ...}'
 
@@ -133,7 +135,8 @@ jobs:
               "besu": "hyperledger/besu@focil-devnet-0",
               "nethermind": "NethermindEth/nethermind@feature/eip-7805",
               "ethrex": "lambdaclass/ethrex@focil-devnet-0",
-              "nimbusel": "status-im/nimbus-eth1@focil-devnet-0"
+              "nimbusel": "status-im/nimbus-eth1@focil-devnet-0",
+              "reth": "paradigmxyz/reth@focil-devnet-0"
             }
           client_source: "git"
           hive_version: "ethereum/hive@master"
@@ -175,7 +178,8 @@ jobs:
             "besu",
             "nethermind",
             "ethrex",
-            "nimbus-el"
+            "nimbus-el",
+            "reth"
           '))}}
         simulator: >-
           ${{ fromJSON(format('[{0}]', inputs.simulator || '
