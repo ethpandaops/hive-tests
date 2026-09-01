@@ -107,25 +107,17 @@ env:
     --docker.auth
     --docker.buildoutput
   # Flags used for the ethereum/eels/consume-engine simulator
-  # (appended after GLOBAL_EXTRA_FLAGS; hive takes the last occurrence of a
-  # repeated flag, so --sim.parallelism here overrides the global value)
   EELS_ENGINE_FLAGS: >-
-    --sim.parallelism=8
     --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-enginex simulator
-  # (keeps the global --sim.parallelism: enginex's whole-fork parallelism is
-  # capped at ~2-3x by the pre-alloc group-size distribution, so raising it
-  # buys nothing until group reduction lands)
   EELS_ENGINEX_FLAGS: >-
     --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-rlp simulator
-  # (--sim.parallelism overrides the global value, as above)
   EELS_RLP_FLAGS: >-
-    --sim.parallelism=8
     --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
     --sim.loglevel=3
