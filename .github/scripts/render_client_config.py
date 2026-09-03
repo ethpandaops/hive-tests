@@ -1,3 +1,10 @@
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#   "PyYAML==6.0.3",
+# ]
+# ///
+
 """
 Render the hive client file a workflow passes to hive-github-action.
 

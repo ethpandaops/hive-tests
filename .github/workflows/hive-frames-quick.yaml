@@ -89,6 +89,11 @@ jobs:
       client_config: ${{ steps.client_config.outputs.client_config }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.12.3"
+          enable-cache: true
+          cache-dependency-glob: ".github/scripts/*.py"
       - name: Render client config
         id: client_config
         env:
@@ -98,8 +103,7 @@ jobs:
         run: |
           echo "hive_repo=${HIVE_VERSION%@*}" >> "$GITHUB_OUTPUT"
           echo "hive_tag=${HIVE_VERSION#*@}" >> "$GITHUB_OUTPUT"
-          python3 -c 'import yaml' 2>/dev/null || pip3 install --quiet pyyaml
-          python3 .github/scripts/render_client_config.py --file "$CLIENT_FILE"
+          uv run --script .github/scripts/render_client_config.py --file "$CLIENT_FILE"
 
   test:
     timeout-minutes: 2160
