@@ -1,0 +1,61 @@
+# Hive client file for the generic workflows:
+# every client built from source.
+#
+# Alternative to master.yaml, for tip-of-branch builds when an image is stale or
+# missing. Select it with the client_file input of a manual workflow dispatch.
+
+# besu
+- client: besu
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: besu-eth/besu
+    tag: main
+
+# erigon
+- client: erigon
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: erigontech/erigon
+    tag: main
+
+# ethrex
+- client: ethrex
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: lambdaclass/ethrex
+    tag: main
+
+# go-ethereum
+- client: go-ethereum
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: ethereum/go-ethereum
+    tag: master
+
+# nethermind
+- client: nethermind
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: NethermindEth/nethermind
+    tag: master
+
+# nimbus-el
+- client: nimbus-el
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: status-im/nimbus-eth1
+    tag: master
+
+# reth
+- client: reth
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: paradigmxyz/reth
+    tag: main

@@ -64,7 +64,8 @@ You can manually trigger test runs through the GitHub Actions interface with cus
 
 - **Client Selection**: Choose which clients to test
 - **Simulator Selection**: Choose which test simulators to run
-- **Version Control**: Specify custom versions/branches for Hive and each client
+- **Client Sources**: Pick a client file (`client_file`) or paste an inline hive client file (`client_config`), see below
+- **Hive Version**: Specify the Hive repository and branch to use
 
 ## Test Results
 
@@ -76,9 +77,14 @@ Test results are automatically uploaded to:
 - **Public Dashboard**: Available at https://hive.ethpandaops.io/
 - **GitHub Artifacts**: Downloadable from the workflow runs
 
-## Configuration
+## Client Configuration
 
-The workflow supports testing different versions of clients by specifying repository and tag combinations (e.g., `ethereum/go-ethereum@master`). Default versions are configured for the latest stable branches of each client.
+How each client is obtained is defined by [hive client files](https://github.com/ethereum/hive/blob/master/docs/commandline.md) under [`.github/configs/hive/`](.github/configs/hive/), one pair per client set:
+
+- `<set>.yaml` is what the workflows run: the best available source per client. Clients with a prebuilt [ethpandaops image](https://github.com/ethpandaops/eth-client-docker-image-builder/blob/master/branches.yaml) for the set use it; a client without one is built from source inside the run.
+- `<set>-git.yaml` builds every client from source, for tip-of-branch runs when an image is stale or missing.
+
+`master.yaml` serves the [`generic.yaml`](.github/workflows/generic.yaml) workflow; the devnet workflows each have their own set. A manual dispatch picks a file with the `client_file` input, or replaces it entirely with an inline hive client file in `client_config`, for example to test a branch or an image that is not in the repository configuration.
 
 ## Infrastructure
 

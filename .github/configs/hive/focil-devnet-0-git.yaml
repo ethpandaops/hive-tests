@@ -1,0 +1,45 @@
+# Hive client file for the focil-devnet-0 workflows:
+# every client built from source.
+#
+# Alternative to focil-devnet-0.yaml, for tip-of-branch builds when an image is stale or
+# missing. Select it with the client_file input of a manual workflow dispatch.
+
+# besu
+- client: besu
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: besu-eth/besu
+    tag: focil-devnet-0
+
+# ethrex
+- client: ethrex
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: lambdaclass/ethrex
+    tag: focil-devnet-0
+
+# nethermind
+- client: nethermind
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: NethermindEth/nethermind
+    tag: focil-devnet-0
+
+# nimbus-el
+- client: nimbus-el
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: status-im/nimbus-eth1
+    tag: focil-devnet-0
+
+# reth
+- client: reth
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: paradigmxyz/reth
+    tag: focil-devnet-0
