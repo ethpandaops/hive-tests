@@ -107,19 +107,25 @@ env:
     --docker.auth
     --docker.buildoutput
   # Flags used for the ethereum/eels/consume-engine simulator
+  # (github_token authenticates the git clone inside the simulator image
+  # build; anonymous clones are rate-limited per IP and fail intermittently
+  # on the shared runners)
   EELS_ENGINE_FLAGS: >-
     --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
+    --sim.buildarg github_token=${{ github.token }}
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-enginex simulator
   EELS_ENGINEX_FLAGS: >-
     --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
+    --sim.buildarg github_token=${{ github.token }}
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-rlp simulator
   EELS_RLP_FLAGS: >-
     --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
+    --sim.buildarg github_token=${{ github.token }}
     --sim.loglevel=3
   # Flags used for the ethereum/rpc-compat simulator
   RPC_COMPAT_FLAGS: >-
