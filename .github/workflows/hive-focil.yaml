@@ -47,7 +47,7 @@ on:
         default: |
           {
             "besu": "hyperledger/besu@focil-devnet-0",
-            "nethermind": "NethermindEth/nethermind@feature/eip-7805",
+            "nethermind": "NethermindEth/nethermind@focil-devnet-0",
             "ethrex": "lambdaclass/ethrex@focil-devnet-0",
             "nimbusel": "status-im/nimbus-eth1@focil-devnet-0",
             "reth": "paradigmxyz/reth@focil-devnet-0"
@@ -133,7 +133,7 @@ jobs:
           client_repos: |
             {
               "besu": "hyperledger/besu@focil-devnet-0",
-              "nethermind": "NethermindEth/nethermind@feature/eip-7805",
+              "nethermind": "NethermindEth/nethermind@focil-devnet-0",
               "ethrex": "lambdaclass/ethrex@focil-devnet-0",
               "nimbusel": "status-im/nimbus-eth1@focil-devnet-0",
               "reth": "paradigmxyz/reth@focil-devnet-0"
