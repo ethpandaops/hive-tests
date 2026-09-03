@@ -42,20 +42,15 @@ def validate(entries, source: str) -> None:
         client = entry.get("client")
         if not isinstance(client, str) or not client:
             fail(f"{where}: 'client' must be a non-empty string")
-        args = entry.get("build_args")
-        if not isinstance(args, dict) or not all(
-            isinstance(k, str) and isinstance(v, str) for k, v in args.items()
-        ):
-            fail(f"{where} ({client}): 'build_args' must map strings to strings")
-        if entry.get("dockerfile") == "git":
-            required = {"github", "tag"}
-        elif "dockerfile" not in entry:
-            required = {"baseimage", "tag"}
-        else:
-            required = {"tag"}
-        missing = required - set(args)
-        if missing:
-            fail(f"{where} ({client}): build_args missing {sorted(missing)}")
+        for key in ("nametag", "dockerfile"):
+            if key in entry and not isinstance(entry[key], str):
+                fail(f"{where} ({client}): '{key}' must be a string")
+        if "build_args" in entry:
+            build_args = entry["build_args"]
+            if not isinstance(build_args, dict) or not all(
+                isinstance(k, str) and isinstance(v, str) for k, v in build_args.items()
+            ):
+                fail(f"{where} ({client}): 'build_args' must map strings to strings")
 
 
 def main() -> None:
@@ -87,7 +82,7 @@ def main() -> None:
     if goproxy:
         for entry in entries:
             if entry.get("dockerfile") == "git" and entry["client"] in GOPROXY_CLIENTS:
-                entry["build_args"].setdefault("GOPROXY", goproxy)
+                entry.setdefault("build_args", {}).setdefault("GOPROXY", goproxy)
 
     rendered = yaml.safe_dump(entries, sort_keys=False, default_flow_style=False)
     print(f"client config from {source}:", file=sys.stderr)
