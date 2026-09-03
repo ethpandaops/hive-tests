@@ -30,40 +30,24 @@ on:
         type: string
         default: ethereum/hive@master
         description: GitHub repository and tag for hive (repo@tag)
-      client_source:
+      client_file:
         type: choice
+        default: master.yaml
         description: >-
-          How client images should be sourced.
-          'git' will use the github repo and tag (See client_config repos).
-          'docker' will use the docker registry and tag (See client_config images).
+          Client file under .github/configs/hive/ defining how each client
+          is built. The default is the best available source per client
+          (prebuilt ethpandaops images where they exist); the -git file
+          builds every client from source.
         options:
-          - docker
-          - git
-        default: git
+          - master.yaml
+          - master-git.yaml
       client_config:
         type: string
-        default: |
-          {
-            "repos": {
-              "geth": "ethereum/go-ethereum@master",
-              "besu": "hyperledger/besu@main",
-              "reth": "paradigmxyz/reth@main",
-              "nethermind": "NethermindEth/nethermind@master",
-              "erigon": "erigontech/erigon@main",
-              "nimbusel": "status-im/nimbus-eth1@master",
-              "ethrex": "lambdaclass/ethrex@main"
-            },
-            "images": {
-              "geth": "docker.ethquokkaops.io/dh/ethpandaops/geth:master",
-              "besu": "docker.ethquokkaops.io/dh/ethpandaops/besu:main",
-              "reth": "docker.ethquokkaops.io/dh/ethpandaops/reth:main",
-              "nethermind": "docker.ethquokkaops.io/dh/ethpandaops/nethermind:master",
-              "erigon": "docker.ethquokkaops.io/dh/ethpandaops/erigon:main",
-              "nimbusel": "docker.ethquokkaops.io/dh/ethpandaops/nimbus-eth1:master",
-              "ethrex": "ghcr.io/lambdaclass/ethrex:main"
-            }
-          }
-        description: 'JSON object containing client configuration with "repos" and "images" objects for git and docker sources respectively'
+        default: ""
+        description: >-
+          Inline hive client file (YAML) that replaces client_file, for
+          example to test a branch or an image that is not in the
+          repository configuration.
       extra_flags:
         type: string
         default: ""
@@ -72,10 +56,6 @@ on:
         type: string
         default: "default"
         description: Concurrency group for the workflow
-      workflow_artifact_upload:
-        description: "Upload test results as an workflow artifact"
-        required: false
-        default: "false"
       timeout_minutes:
         type: string
         default: "2880"
@@ -142,15 +122,17 @@ jobs:
       client_config: ${{ steps.client_config.outputs.client_config }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - uses: ethpandaops/hive-github-action/helpers/client-config@1aa8d73dad34de13afbb3113ab16c1a462d2fbc3 # v0.5.0
-        name: "Client config"
+      - name: Render client config
         id: client_config
-        with:
-          client_repos: ${{ toJSON(fromJSON(inputs.client_config).repos) }}
-          client_images: ${{ toJSON(fromJSON(inputs.client_config).images) }}
-          client_source: ${{ inputs.client_source }}
-          hive_version: ${{ inputs.hive_version }}
-          goproxy: ${{ env.GOPROXY }}
+        env:
+          HIVE_VERSION: ${{ inputs.hive_version || 'ethereum/hive@master' }}
+          CLIENT_FILE: ${{ inputs.client_file || 'master.yaml' }}
+          CLIENT_CONFIG: ${{ inputs.client_config }}
+        run: |
+          echo "hive_repo=${HIVE_VERSION%@*}" >> "$GITHUB_OUTPUT"
+          echo "hive_tag=${HIVE_VERSION#*@}" >> "$GITHUB_OUTPUT"
+          python3 -c 'import yaml' 2>/dev/null || pip3 install --quiet pyyaml
+          python3 .github/scripts/render_client_config.py --file "$CLIENT_FILE"
 
   test:
     timeout-minutes: ${{ fromJSON(inputs.client_timeout_overrides)[matrix.client][matrix.simulator] || fromJSON(inputs.timeout_minutes) }}
@@ -207,6 +189,6 @@ jobs:
           s3_public_url: ${{ env.S3_PUBLIC_URL }}
           rclone_config: ${{ secrets.HIVE_RCLONE_CONFIG }}
           rclone_version: ${{ env.INSTALL_RCLONE_VERSION }}
-          workflow_artifact_upload: ${{ inputs.workflow_artifact_upload }}
+          workflow_artifact_upload: false
           website_upload: false
           website_index_generation: false

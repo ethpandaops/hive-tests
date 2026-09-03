@@ -26,39 +26,24 @@ on:
         type: string
         default: ethereum/hive@master
         description: GitHub repository and tag for hive (repo@tag)
-      client_source:
+      client_file:
         type: choice
-        default: git
+        default: frames-devnet-0.yaml
         description: >-
-          How client images should be sourced.
-          'git' will use the github repo and tag (See client_repos).
-          'docker' will use the docker registry and tag (See client_images).
+          Client file under .github/configs/hive/ defining how each client
+          is built. The default is the best available source per client
+          (prebuilt ethpandaops images where they exist); the -git file
+          builds every client from source.
         options:
-          - git
-          - docker
-      common_client_tag:
+          - frames-devnet-0.yaml
+          - frames-devnet-0-git.yaml
+      client_config:
         type: string
-        description: >-
-          If provided, this tag will be used for all clients, overriding individual tags/branches in client_repos and client_images
         default: ""
-      client_repos:
-        type: string
-        default: |
-          {
-            "geth": "lightclient/go-ethereum@frames",
-            "nethermind": "NethermindEth/nethermind@feature/frames-devnet-0",
-            "ethrex": "lambdaclass/ethrex@frames-devnet-0"
-          }
-        description: 'JSON object containing client versions in format {"client": "repo@tag", ...}'
-      client_images:
-        type: string
-        default: |
-          {
-            "geth": "docker.ethquokkaops.io/dh/ethpandaops/geth:master",
-            "nethermind": "docker.ethquokkaops.io/dh/ethpandaops/nethermind:master",
-            "ethrex": "docker.ethquokkaops.io/dh/ethpandaops/ethrex:main"
-          }
-        description: 'JSON object containing client docker images in format {"client": "registry:tag", ...}'
+        description: >-
+          Inline hive client file (YAML) that replaces client_file, for
+          example to test a branch or an image that is not in the
+          repository configuration.
 
 env:
   # Proxy
@@ -72,8 +57,6 @@ env:
   GLOBAL_EXTRA_FLAGS: >-
     --client.checktimelimit=300s
     --docker.buildoutput
-  # Docker-specific flags (only used when client_source is 'docker')
-  DOCKER_AUTH_FLAGS: >-
     --docker.auth
   # Flags used for the ethereum/eels/consume-engine simulator
   EELS_ENGINE_FLAGS: >-
@@ -98,23 +81,21 @@ jobs:
     outputs:
       hive_repo: ${{ steps.client_config.outputs.hive_repo }}
       hive_tag: ${{ steps.client_config.outputs.hive_tag }}
+      # Hive client file (YAML) rendered from .github/configs/hive/
       client_config: ${{ steps.client_config.outputs.client_config }}
-      client_source: ${{ inputs.client_source || 'git' }}
     steps:
-      - uses: ethpandaops/hive-github-action/helpers/client-config@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
-        name: "Client config"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Render client config
         id: client_config
-        with:
-          client_repos: >-
-            ${{ inputs.client_repos ||
-            '{"geth": "lightclient/go-ethereum@frames",
-            "nethermind": "NethermindEth/nethermind@feature/frames-devnet-0",
-            "ethrex": "lambdaclass/ethrex@frames-devnet-0"}' }}
-          client_images: ${{ inputs.client_images }}
-          common_client_tag: ${{ inputs.common_client_tag }}
-          client_source: ${{ inputs.client_source || 'git' }}
-          hive_version: ${{ inputs.hive_version || 'ethereum/hive@master' }}
-          goproxy: ${{ env.GOPROXY }}
+        env:
+          HIVE_VERSION: ${{ inputs.hive_version || 'ethereum/hive@master' }}
+          CLIENT_FILE: ${{ inputs.client_file || 'frames-devnet-0.yaml' }}
+          CLIENT_CONFIG: ${{ inputs.client_config }}
+        run: |
+          echo "hive_repo=${HIVE_VERSION%@*}" >> "$GITHUB_OUTPUT"
+          echo "hive_tag=${HIVE_VERSION#*@}" >> "$GITHUB_OUTPUT"
+          python3 -c 'import yaml' 2>/dev/null || pip3 install --quiet pyyaml
+          python3 .github/scripts/render_client_config.py --file "$CLIENT_FILE"
 
   test:
     timeout-minutes: 2160
@@ -171,7 +152,6 @@ jobs:
           client_config: ${{ needs.prepare.outputs.client_config }}
           extra_flags: >-
             ${{ env.GLOBAL_EXTRA_FLAGS }}
-            ${{ needs.prepare.outputs.client_source == 'docker' && env.DOCKER_AUTH_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-engine' && env.EELS_ENGINE_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-rlp' && env.EELS_RLP_FLAGS || '' }}
           s3_upload: true

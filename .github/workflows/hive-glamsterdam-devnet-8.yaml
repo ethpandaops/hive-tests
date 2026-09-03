@@ -22,41 +22,24 @@ on:
         type: string
         default: ethereum/hive@master
         description: GitHub repository and tag for hive (repo@tag)
-      client_source:
+      client_file:
         type: choice
+        default: glamsterdam-devnet-8.yaml
         description: >-
-          How client images should be sourced.
-          'git' will use the github repo and tag (See client_repos).
-          'docker' will use the docker registry and tag (See client_images).
+          Client file under .github/configs/hive/ defining how each client
+          is built. The default is the best available source per client
+          (prebuilt ethpandaops images where they exist); the -git file
+          builds every client from source.
         options:
-          - docker
-          - git
-      client_repos:
+          - glamsterdam-devnet-8.yaml
+          - glamsterdam-devnet-8-git.yaml
+      client_config:
         type: string
-        default: |
-          {
-            "geth": "ethereum/go-ethereum@master",
-            "besu": "besu-eth/besu@main",
-            "reth": "paradigmxyz/reth@main",
-            "nethermind": "NethermindEth/nethermind@master",
-            "erigon": "erigontech/erigon@main",
-            "nimbusel": "status-im/nimbus-eth1@master",
-            "ethrex": "lambdaclass/ethrex@main"
-          }
-        description: 'JSON object containing client versions in format {"client": "repo@tag", ...}'
-      client_images:
-        type: string
-        default: |
-          {
-            "geth": "docker.ethquokkaops.io/dh/ethpandaops/geth:master",
-            "besu": "docker.ethquokkaops.io/dh/ethpandaops/besu:main",
-            "reth": "docker.ethquokkaops.io/dh/ethpandaops/reth:glamsterdam-devnet-8",
-            "nethermind": "docker.ethquokkaops.io/dh/ethpandaops/nethermind:master",
-            "erigon": "docker.ethquokkaops.io/dh/ethpandaops/erigon:glamsterdam-devnet-8",
-            "nimbusel": "docker.ethquokkaops.io/dh/ethpandaops/nimbus-eth1:master",
-            "ethrex": "docker.ethquokkaops.io/dh/ethpandaops/ethrex:glamsterdam-devnet-8"
-          }
-        description: 'JSON object containing client docker images in format {"client": "registry:tag", ...}'
+        default: ""
+        description: >-
+          Inline hive client file (YAML) that replaces client_file, for
+          example to test a branch or an image that is not in the
+          repository configuration.
 
 env:
   # Proxy
@@ -70,8 +53,6 @@ env:
   GLOBAL_EXTRA_FLAGS: >-
     --client.checktimelimit=300s
     --docker.buildoutput
-  # Docker-specific flags (only used when client_source is 'docker')
-  DOCKER_AUTH_FLAGS: >-
     --docker.auth
   # Flags used for the ethereum/eels/consume-engine simulator
   EELS_ENGINE_FLAGS: >-
@@ -102,59 +83,23 @@ jobs:
   prepare:
     runs-on: ubuntu-latest
     outputs:
-      # Hive version
-      hive_repo: >-
-        ${{
-          steps.client_config_schedule.outputs.hive_repo ||
-          steps.client_config_dispatch.outputs.hive_repo
-        }}
-      hive_tag: >-
-        ${{
-          steps.client_config_schedule.outputs.hive_tag ||
-          steps.client_config_dispatch.outputs.hive_tag
-        }}
-      # client_config contains the YAML client config for Hive
-      client_config: >-
-        ${{
-          steps.client_config_schedule.outputs.client_config ||
-          steps.client_config_dispatch.outputs.client_config
-        }}
-      # client_source to determine if we need docker auth
-      client_source: >-
-        ${{
-          github.event_name == 'schedule' && 'docker' ||
-          inputs.client_source
-        }}
+      hive_repo: ${{ steps.client_config.outputs.hive_repo }}
+      hive_tag: ${{ steps.client_config.outputs.hive_tag }}
+      # Hive client file (YAML) rendered from .github/configs/hive/
+      client_config: ${{ steps.client_config.outputs.client_config }}
     steps:
-      - uses: ethpandaops/hive-github-action/helpers/client-config@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
-        if: github.event_name == 'schedule'
-        name: "Client config: schedule"
-        id: client_config_schedule
-        with:
-          client_images: |
-            {
-              "geth": "docker.ethquokkaops.io/dh/ethpandaops/geth:master",
-              "besu": "docker.ethquokkaops.io/dh/ethpandaops/besu:main",
-              "reth": "docker.ethquokkaops.io/dh/ethpandaops/reth:glamsterdam-devnet-8",
-              "nethermind": "docker.ethquokkaops.io/dh/ethpandaops/nethermind:master",
-              "erigon": "docker.ethquokkaops.io/dh/ethpandaops/erigon:glamsterdam-devnet-8",
-              "nimbusel": "docker.ethquokkaops.io/dh/ethpandaops/nimbus-eth1:master",
-              "ethrex": "docker.ethquokkaops.io/dh/ethpandaops/ethrex:glamsterdam-devnet-8"
-            }
-          client_source: "docker"
-          hive_version: "ethereum/hive@master"
-          goproxy: ${{ env.GOPROXY }}
-
-      - uses: ethpandaops/hive-github-action/helpers/client-config@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
-        if: github.event_name == 'workflow_dispatch'
-        name: "Client config: workflow_dispatch"
-        id: client_config_dispatch
-        with:
-          client_repos: ${{ inputs.client_repos }}
-          client_images: ${{ inputs.client_images }}
-          client_source: ${{ inputs.client_source }}
-          hive_version: ${{ inputs.hive_version }}
-          goproxy: ${{ env.GOPROXY }}
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Render client config
+        id: client_config
+        env:
+          HIVE_VERSION: ${{ inputs.hive_version || 'ethereum/hive@master' }}
+          CLIENT_FILE: ${{ inputs.client_file || 'glamsterdam-devnet-8.yaml' }}
+          CLIENT_CONFIG: ${{ inputs.client_config }}
+        run: |
+          echo "hive_repo=${HIVE_VERSION%@*}" >> "$GITHUB_OUTPUT"
+          echo "hive_tag=${HIVE_VERSION#*@}" >> "$GITHUB_OUTPUT"
+          python3 -c 'import yaml' 2>/dev/null || pip3 install --quiet pyyaml
+          python3 .github/scripts/render_client_config.py --file "$CLIENT_FILE"
 
   test:
     timeout-minutes: 4320
@@ -210,7 +155,6 @@ jobs:
           client_config: ${{ needs.prepare.outputs.client_config }}
           extra_flags: >-
             ${{ env.GLOBAL_EXTRA_FLAGS }}
-            ${{ needs.prepare.outputs.client_source == 'docker' && env.DOCKER_AUTH_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-engine' && env.EELS_ENGINE_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-rlp' && env.EELS_RLP_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/execute-blobs' && env.EELS_EXECUTE_FLAGS || '' }}
