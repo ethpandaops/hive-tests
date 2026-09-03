@@ -44,6 +44,10 @@ on:
           Inline hive client file (YAML) that replaces client_file, for
           example to test a branch or an image that is not in the
           repository configuration.
+      workflow_artifact_upload:
+        type: boolean
+        default: true
+        description: Upload test results as a workflow artifact
 
 env:
   # Proxy
@@ -160,5 +164,6 @@ jobs:
           s3_public_url: ${{ env.S3_PUBLIC_URL }}
           rclone_config: ${{ secrets.HIVE_RCLONE_CONFIG }}
           rclone_version: ${{ env.INSTALL_RCLONE_VERSION }}
-          workflow_artifact_upload: true
+          workflow_artifact_upload: >-
+            ${{ github.event_name == 'schedule' || inputs.workflow_artifact_upload }}
           website_upload: true
