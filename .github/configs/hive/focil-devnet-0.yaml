@@ -1,0 +1,44 @@
+# Hive client file for the focil-devnet-0 workflows:
+# the best available source per client.
+#
+# Clients with a prebuilt ethpandaops image for this set use it (build_args
+# baseimage/tag); a client without one is built from source inside the run
+# (dockerfile: git). focil-devnet-0-git.yaml builds every client from source.
+#
+# Image tags follow the branches ethpandaops builds:
+# https://github.com/ethpandaops/eth-client-docker-image-builder/blob/master/branches.yaml
+
+# besu
+- client: besu
+  nametag: default
+  build_args:
+    baseimage: docker.ethquokkaops.io/dh/ethpandaops/besu
+    tag: focil-devnet-0
+
+# ethrex
+- client: ethrex
+  nametag: default
+  build_args:
+    baseimage: docker.ethquokkaops.io/dh/ethpandaops/ethrex
+    tag: focil-devnet-0
+
+# nethermind
+- client: nethermind
+  nametag: default
+  build_args:
+    baseimage: docker.ethquokkaops.io/dh/ethpandaops/nethermind
+    tag: focil-devnet-0
+
+# nimbus-el
+- client: nimbus-el
+  nametag: default
+  build_args:
+    baseimage: docker.ethquokkaops.io/dh/ethpandaops/nimbus-eth1
+    tag: focil-devnet-0
+
+# reth
+- client: reth
+  nametag: default
+  build_args:
+    baseimage: docker.ethquokkaops.io/dh/ethpandaops/reth
+    tag: focil-devnet-0

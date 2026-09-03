@@ -1,0 +1,36 @@
+# Hive client file for the frames-devnet-0 workflows:
+# the best available source per client.
+#
+# Clients with a prebuilt ethpandaops image for this set use it (build_args
+# baseimage/tag); a client without one is built from source inside the run
+# (dockerfile: git). frames-devnet-0-git.yaml builds every client from source.
+#
+# Image tags follow the branches ethpandaops builds:
+# https://github.com/ethpandaops/eth-client-docker-image-builder/blob/master/branches.yaml
+
+# ethrex
+- client: ethrex
+  nametag: default
+  build_args:
+    baseimage: docker.ethquokkaops.io/dh/ethpandaops/ethrex
+    tag: frames-devnet-0
+
+# go-ethereum
+# No ethpandaops image: the frames implementation lives in the lightclient
+# fork, which the image builder does not track.
+- client: go-ethereum
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: lightclient/go-ethereum
+    tag: frames
+
+# nethermind
+# No current ethpandaops image: nethermind:frames-devnet-0 was built from a
+# branch that no longer exists; the live branch is feature/frames-devnet-0.
+- client: nethermind
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: NethermindEth/nethermind
+    tag: feature/frames-devnet-0

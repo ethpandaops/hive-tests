@@ -1,0 +1,29 @@
+# Hive client file for the frames-devnet-0 workflows:
+# every client built from source.
+#
+# Alternative to frames-devnet-0.yaml, for tip-of-branch builds when an image is stale or
+# missing. Select it with the client_file input of a manual workflow dispatch.
+
+# ethrex
+- client: ethrex
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: lambdaclass/ethrex
+    tag: frames-devnet-0
+
+# go-ethereum
+- client: go-ethereum
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: lightclient/go-ethereum
+    tag: frames
+
+# nethermind
+- client: nethermind
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: NethermindEth/nethermind
+    tag: feature/frames-devnet-0
