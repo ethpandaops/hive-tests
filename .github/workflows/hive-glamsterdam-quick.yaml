@@ -1,4 +1,4 @@
-name: Hive - Glamsterdam Devnet 8 Quick
+name: Hive - Glamsterdam Quick
 on:
   schedule:
     - cron: "45 12 * * *"
@@ -22,15 +22,15 @@ on:
         description: GitHub repository and tag for hive (repo@tag)
       client_file:
         type: choice
-        default: glamsterdam-devnet-8.yaml
+        default: glamsterdam.yaml
         description: >-
           Client file under .github/configs/hive/ defining how each client
           is built. The default is the best available source per client
           (prebuilt ethpandaops images where they exist); the -git file
           builds every client from source.
         options:
-          - glamsterdam-devnet-8.yaml
-          - glamsterdam-devnet-8-git.yaml
+          - glamsterdam.yaml
+          - glamsterdam-git.yaml
       client_config:
         type: string
         default: ""
@@ -92,7 +92,7 @@ jobs:
         id: client_config
         env:
           HIVE_VERSION: ${{ inputs.hive_version || 'ethereum/hive@master' }}
-          CLIENT_FILE: ${{ inputs.client_file || 'glamsterdam-devnet-8.yaml' }}
+          CLIENT_FILE: ${{ inputs.client_file || 'glamsterdam.yaml' }}
           CLIENT_CONFIG: ${{ inputs.client_config }}
         run: |
           echo "hive_repo=${HIVE_VERSION%@*}" >> "$GITHUB_OUTPUT"

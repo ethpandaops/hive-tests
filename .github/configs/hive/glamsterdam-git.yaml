@@ -1,7 +1,7 @@
-# Hive client file for the glamsterdam-devnet-8 workflows:
+# Hive client file for the glamsterdam workflows:
 # every client built from source.
 #
-# Alternative to glamsterdam-devnet-8.yaml, for tip-of-branch builds when an image is stale or
+# Alternative to glamsterdam.yaml, for tip-of-branch builds when an image is stale or
 # missing. Select it with the client_file input of a manual workflow dispatch.
 
 # besu
@@ -18,7 +18,7 @@
   dockerfile: git
   build_args:
     github: erigontech/erigon
-    tag: glamsterdam-devnet-8
+    tag: main
 
 # ethrex
 - client: ethrex
@@ -26,7 +26,7 @@
   dockerfile: git
   build_args:
     github: lambdaclass/ethrex
-    tag: glamsterdam-devnet-8
+    tag: main
 
 # go-ethereum
 - client: go-ethereum
