@@ -58,4 +58,4 @@
   dockerfile: git
   build_args:
     github: paradigmxyz/reth
-    tag: glamsterdam-devnet-8
+    tag: main
