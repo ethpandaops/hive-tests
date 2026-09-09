@@ -120,7 +120,7 @@ jobs:
       }}
     concurrency:
       group: >-
-        ${{ github.head_ref || inputs || github.workflow }}-${{ matrix.client }}-${{ matrix.simulator }}
+        ${{ github.workflow }}-${{ github.head_ref || 'scheduled' }}-${{ matrix.client }}-${{ matrix.simulator }}
     strategy:
       fail-fast: false
       matrix:
