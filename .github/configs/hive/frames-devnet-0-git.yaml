@@ -27,3 +27,11 @@
   build_args:
     github: NethermindEth/nethermind
     tag: feature/frames-devnet-0
+
+# reth
+- client: reth
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: paradigmxyz/reth
+    tag: frames-devnet-0
