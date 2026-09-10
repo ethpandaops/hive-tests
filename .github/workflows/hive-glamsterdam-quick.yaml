@@ -116,7 +116,7 @@ jobs:
       }}
     concurrency:
       group: >-
-        ${{ github.head_ref || inputs }}-${{ matrix.client }}-${{ matrix.simulator }}-quick
+        ${{ github.head_ref || github.workflow }}-${{ matrix.client }}-${{ matrix.simulator }}-quick
     strategy:
       fail-fast: false
       matrix:
