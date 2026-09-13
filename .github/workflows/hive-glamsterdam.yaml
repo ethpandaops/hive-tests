@@ -12,11 +12,12 @@ on:
         type: string
         default: >-
           "ethereum/eels/consume-engine",
+          "ethereum/eels/consume-enginex",
           "ethereum/eels/consume-rlp",
           "ethereum/eels/execute-blobs"
         description: >-
           Comma-separated list of simulators to test
-          .e.g ethereum/rpc-compat, ethereum/eels/consume-engine, ethereum/eels/consume-rlp, ethereum/eels/execute-blobs
+          .e.g ethereum/rpc-compat, ethereum/eels/consume-engine, ethereum/eels/consume-enginex, ethereum/eels/consume-rlp, ethereum/eels/execute-blobs
       hive_version:
         type: string
         default: ethereum/hive@master
@@ -64,6 +65,12 @@ env:
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
     --sim.limit='.*fork_(Amsterdam|BPO2ToAmsterdamAtTime15k|Osaka).*'
     --sim.limit.exact=false
+    --sim.loglevel=3
+  # Flags used for the ethereum/eels/consume-enginex simulator
+  EELS_ENGINEX_FLAGS: >-
+    --sim.parallelism=4
+    --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
+    --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-rlp simulator
   EELS_RLP_FLAGS: >-
@@ -142,9 +149,13 @@ jobs:
         simulator: >-
           ${{ fromJSON(format('[{0}]', inputs.simulator || '
             "ethereum/eels/consume-engine",
+            "ethereum/eels/consume-enginex",
             "ethereum/eels/consume-rlp",
             "ethereum/eels/execute-blobs"
           '))}}
+        exclude:
+          - client: ethrex
+            simulator: ethereum/eels/consume-enginex
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ethpandaops/hive-github-action/helpers/self-hosted-runner-dependencies@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
@@ -163,6 +174,7 @@ jobs:
           extra_flags: >-
             ${{ env.GLOBAL_EXTRA_FLAGS }}
             ${{ matrix.simulator == 'ethereum/eels/consume-engine' && env.EELS_ENGINE_FLAGS || '' }}
+            ${{ matrix.simulator == 'ethereum/eels/consume-enginex' && env.EELS_ENGINEX_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-rlp' && env.EELS_RLP_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/execute-blobs' && env.EELS_EXECUTE_FLAGS || '' }}
           s3_upload: true
