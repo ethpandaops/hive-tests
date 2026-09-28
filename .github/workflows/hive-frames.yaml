@@ -75,9 +75,17 @@ env:
     --sim.parallelism=6
     --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
-    --sim.limit='.*fork_Bogota.*'
     --sim.limit.exact=false
     --sim.loglevel=3
+  # ethereum/eels/consume-rlp is split by test directory into shards of
+  # similar duration, as a single run is killed before it completes. The last
+  # shard takes every directory the others do not name.
+  EELS_RLP_SHARD_1_FLAGS: >-
+    --sim.limit='.*tests/(cancun|osaka|shanghai|paris|london|homestead)/.*fork_Bogota.*'
+  EELS_RLP_SHARD_2_FLAGS: >-
+    --sim.limit='.*tests/(ported_static|frontier|byzantium)/.*fork_Bogota.*'
+  EELS_RLP_SHARD_3_FLAGS: >-
+    --sim.limit='(?!.*tests/(cancun|osaka|shanghai|paris|london|homestead|ported_static|frontier|byzantium)/).*fork_Bogota.*'
 
 jobs:
   prepare:
@@ -120,7 +128,7 @@ jobs:
       }}
     concurrency:
       group: >-
-        ${{ github.workflow }}-${{ github.head_ref || 'scheduled' }}-${{ matrix.client }}-${{ matrix.simulator }}
+        ${{ github.workflow }}-${{ github.head_ref || 'scheduled' }}-${{ matrix.client }}-${{ matrix.simulator }}-${{ matrix.shard }}
     strategy:
       fail-fast: false
       matrix:
@@ -136,6 +144,12 @@ jobs:
             "ethereum/eels/consume-engine",
             "ethereum/eels/consume-rlp"
           '))}}
+        shard: [1, 2, 3]
+        exclude:
+          - simulator: ethereum/eels/consume-engine
+            shard: 2
+          - simulator: ethereum/eels/consume-engine
+            shard: 3
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Resolve fixtures release
@@ -152,6 +166,13 @@ jobs:
         with:
           username: ethpandaops
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Start memory sampler
+        if: matrix.simulator == 'ethereum/eels/consume-rlp'
+        run: |
+          nohup bash -c 'while true; do
+            date -u; free -m; ps -eo pid,rss,comm --sort=-rss | head -n 15; echo
+            sleep 60
+          done' > "$RUNNER_TEMP/memory.log" 2>&1 &
       - uses: ethpandaops/hive-github-action@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
         with:
           hive_repository: ${{ needs.prepare.outputs.hive_repo }}
@@ -163,6 +184,9 @@ jobs:
             ${{ env.GLOBAL_EXTRA_FLAGS }}
             ${{ matrix.simulator == 'ethereum/eels/consume-engine' && env.EELS_ENGINE_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-rlp' && env.EELS_RLP_FLAGS || '' }}
+            ${{ matrix.simulator == 'ethereum/eels/consume-rlp' && matrix.shard == 1 && env.EELS_RLP_SHARD_1_FLAGS || '' }}
+            ${{ matrix.simulator == 'ethereum/eels/consume-rlp' && matrix.shard == 2 && env.EELS_RLP_SHARD_2_FLAGS || '' }}
+            ${{ matrix.simulator == 'ethereum/eels/consume-rlp' && matrix.shard == 3 && env.EELS_RLP_SHARD_3_FLAGS || '' }}
           s3_upload: true
           s3_bucket: ${{ env.S3_BUCKET }}
           s3_path: ${{ env.S3_PATH }}
@@ -171,4 +195,15 @@ jobs:
           rclone_version: ${{ env.INSTALL_RCLONE_VERSION }}
           workflow_artifact_upload: >-
             ${{ github.event_name == 'schedule' || inputs.workflow_artifact_upload }}
+          workflow_artifact_prefix: >-
+            ${{ matrix.simulator == 'ethereum/eels/consume-rlp' && format('ethereum-eels-consume-rlp-{0}-shard-{1}', matrix.client, matrix.shard) || '' }}
           website_upload: true
+      - name: Report out-of-memory kills
+        if: failure() && matrix.simulator == 'ethereum/eels/consume-rlp'
+        run: sudo dmesg -T | grep -iE 'killed process|out of memory' || true
+      - name: Upload memory log
+        if: always() && matrix.simulator == 'ethereum/eels/consume-rlp'
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: ethereum-eels-consume-rlp-${{ matrix.client }}-shard-${{ matrix.shard }}-memory.log
+          path: ${{ runner.temp }}/memory.log
