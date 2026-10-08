@@ -2,6 +2,12 @@ name: Hive - Generic
 on:
   workflow_dispatch:
     inputs:
+      fixtures_tag:
+        type: string
+        default: ""
+        description: >-
+          Pin a fixtures release tag e.g. tests@v21.0.1.
+          Empty resolves the greatest published tests tag.
       client:
         type: string
         default: '["go-ethereum","reth","nethermind","nimbus-el","besu","erigon","ethrex"]'
@@ -82,7 +88,6 @@ env:
   S3_PATH: generic
   S3_PUBLIC_URL: https://hive.ethpandaops.io/#/test/generic/
   INSTALL_RCLONE_VERSION: v1.68.2
-  EELS_BUILD_ARG_FIXTURES: https://github.com/ethereum/execution-specs/releases/download/tests@v21.0.0/fixtures.tar.gz
   EELS_BUILD_ARG_BRANCH: forks/amsterdam
   # Flags used for all simulators
   GLOBAL_EXTRA_FLAGS: >-
@@ -167,6 +172,16 @@ jobs:
         simulator: ${{ fromJSON(inputs.simulator)}}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Resolve fixtures release
+        if: contains(matrix.simulator, 'ethereum/eels/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FIXTURES_TAG: ${{ inputs.fixtures_tag }}
+        run: |
+          python3 .github/scripts/resolve_fixtures_release.py \
+            --prefix tests \
+            --asset fixtures.tar.gz
 
       - uses: ethpandaops/actions/docker-login@a91b7a8dd6a264f5e845ac2aa52d2d6f24e6d01d
         with:
