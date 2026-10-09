@@ -8,8 +8,10 @@ on:
         type: string
         default: ""
         description: >-
-          Pin a fixtures release tag e.g. tests-frames-devnet@v0.1.0.
+          Pin a fixtures release tag e.g. tests-frames-devnet@v1.0.0.
           Empty resolves the greatest published tests-frames-devnet tag.
+          The EELS branch (devnets/frames/N) and the client branches
+          (frames-devnet-N) follow the tag's major version.
       client:
         type: string
         default: '"go-ethereum","nethermind","ethrex","reth"'
@@ -28,15 +30,15 @@ on:
         description: GitHub repository and tag for hive (repo@tag)
       client_file:
         type: choice
-        default: frames-devnet-0.yaml
+        default: frames-git.yaml
         description: >-
           Client file under .github/configs/hive/ defining how each client
-          is built. The default is the best available source per client
-          (prebuilt ethpandaops images where they exist); the -git file
-          builds every client from source.
+          is built. The default builds every client from source from its
+          frames-devnet-N branch; frames.yaml uses the prebuilt
+          ethpandaops images for that branch instead.
         options:
-          - frames-devnet-0.yaml
-          - frames-devnet-0-git.yaml
+          - frames-git.yaml
+          - frames.yaml
       client_config:
         type: string
         default: ""
@@ -87,6 +89,9 @@ jobs:
       hive_tag: ${{ steps.client_config.outputs.hive_tag }}
       # Hive client file (YAML) rendered from .github/configs/hive/
       client_config: ${{ steps.client_config.outputs.client_config }}
+      # Fixtures release and the EELS branch derived from its major version
+      fixtures_url: ${{ steps.fixtures.outputs.fixtures_url }}
+      eels_branch: ${{ steps.fixtures.outputs.eels_branch }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
@@ -94,16 +99,29 @@ jobs:
           version: "0.12.3"
           enable-cache: true
           cache-dependency-glob: ".github/scripts/*.py"
+      - name: Resolve fixtures release
+        id: fixtures
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FIXTURES_TAG: ${{ inputs.fixtures_tag }}
+        run: |
+          python3 .github/scripts/resolve_fixtures_release.py \
+            --prefix tests-frames-devnet \
+            --asset fixtures_frames-devnet.tar.gz \
+            --devnet-branch 'devnets/frames/{major}' \
+            --devnet-name 'frames-devnet-{major}'
       - name: Render client config
         id: client_config
         env:
           HIVE_VERSION: ${{ inputs.hive_version || 'ethereum/hive@master' }}
-          CLIENT_FILE: ${{ inputs.client_file || 'frames-devnet-0.yaml' }}
+          CLIENT_FILE: ${{ inputs.client_file || 'frames-git.yaml' }}
           CLIENT_CONFIG: ${{ inputs.client_config }}
+          DEVNET: ${{ steps.fixtures.outputs.devnet }}
         run: |
           echo "hive_repo=${HIVE_VERSION%@*}" >> "$GITHUB_OUTPUT"
           echo "hive_tag=${HIVE_VERSION#*@}" >> "$GITHUB_OUTPUT"
-          uv run --script .github/scripts/render_client_config.py --file "$CLIENT_FILE"
+          uv run --script .github/scripts/render_client_config.py \
+            --file "$CLIENT_FILE" --var "DEVNET=$DEVNET"
 
   test:
     timeout-minutes: 4320
@@ -112,7 +130,9 @@ jobs:
       # BAL-specific environment variables
       HIVE_PARALLEL_TX_PROCESSING_DISABLED: "true"
       HIVE_AMSTERDAM_TIMESTAMP: "1777456800"
-      EELS_BUILD_ARG_BRANCH: "devnets/frames/0"
+      # Both follow the resolved fixtures release, see the prepare job
+      EELS_BUILD_ARG_FIXTURES: ${{ needs.prepare.outputs.fixtures_url }}
+      EELS_BUILD_ARG_BRANCH: ${{ needs.prepare.outputs.eels_branch }}
     runs-on: >-
       ${{
         contains(matrix.simulator, 'ethereum/eels/') && 'self-hosted-ghr-size-ccx33-x64' ||
@@ -138,14 +158,6 @@ jobs:
           '))}}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Resolve fixtures release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          FIXTURES_TAG: ${{ inputs.fixtures_tag }}
-        run: |
-          python3 .github/scripts/resolve_fixtures_release.py \
-            --prefix tests-frames-devnet \
-            --asset fixtures_frames-devnet.tar.gz
       - uses: ethpandaops/hive-github-action/helpers/self-hosted-runner-dependencies@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
         if: runner.environment != 'github-hosted'
       - uses: ethpandaops/actions/docker-login@a91b7a8dd6a264f5e845ac2aa52d2d6f24e6d01d

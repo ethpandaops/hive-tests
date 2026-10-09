@@ -10,15 +10,20 @@ Render the hive client file a workflow passes to hive-github-action.
 
 Reads `.github/configs/hive/<file>` or, when the `CLIENT_CONFIG`
 environment variable is non-empty, that inline YAML instead (the
-`client_config` dispatch input). Validates the hive client-file shape so
-a typo fails here rather than as an obscure hive build error, adds a
-`GOPROXY` build arg to git builds of Go clients when the `GOPROXY`
-environment variable is set, prints the result, and writes it as the
-`client_config` step output when `GITHUB_OUTPUT` is set.
+`client_config` dispatch input). Fills `${NAME}` placeholders from
+`--var NAME=VALUE` first, so a devnet family can keep one client file
+whose branch or image tag follows the fixtures release (`--var
+DEVNET=frames-devnet-1`), and fails on a placeholder left unfilled.
+Validates the hive client-file shape so a typo fails here rather than
+as an obscure hive build error, adds a `GOPROXY` build arg to git builds
+of Go clients when the `GOPROXY` environment variable is set, prints
+the result, and writes it as the `client_config` step output when
+`GITHUB_OUTPUT` is set.
 """
 
 import argparse
 import os
+import string
 import sys
 import uuid
 
@@ -67,7 +72,20 @@ def main() -> None:
     parser.add_argument(
         "--file", required=True, help=f"client file name under {CONFIG_DIR}/"
     )
+    parser.add_argument(
+        "--var",
+        action="append",
+        default=[],
+        metavar="NAME=VALUE",
+        help="fill ${NAME} placeholders in the client file (repeatable)",
+    )
     args = parser.parse_args()
+    variables = {}
+    for assignment in args.var:
+        name, separator, value = assignment.partition("=")
+        if not separator or not name:
+            fail(f"--var expects NAME=VALUE, got {assignment!r}")
+        variables[name] = value
 
     inline = os.environ.get("CLIENT_CONFIG", "").strip()
     if inline:
@@ -79,6 +97,11 @@ def main() -> None:
                 text = handle.read()
         except OSError as err:
             fail(str(err))
+    template = string.Template(text)
+    text = template.safe_substitute(variables)
+    unresolved = sorted(string.Template(text).get_identifiers())
+    if unresolved:
+        fail(f"{source}: unresolved placeholders {unresolved}, pass --var")
     try:
         entries = yaml.safe_load(text)
     except yaml.YAMLError as err:
