@@ -1,0 +1,44 @@
+# Hive client file for the frames workflows:
+# every client built from source.
+#
+# `${DEVNET}` is the devnet the fixtures release targets, frames-devnet-N for
+# a tests-frames-devnet@vN.y.z release. The workflow fills it in from the
+# resolved release, so a new devnet needs no change here as long as every
+# client branches as frames-devnet-N in its upstream repository.
+#
+# Every client is built from source inside the run (dockerfile: git) from its
+# frames-devnet-N branch, with no dependency on the ethpandaops image builder.
+# frames.yaml uses the prebuilt images instead, select it with the client_file
+# input of a manual workflow dispatch.
+
+# ethrex
+- client: ethrex
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: lambdaclass/ethrex
+    tag: ${DEVNET}
+
+# go-ethereum
+- client: go-ethereum
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: ethereum/go-ethereum
+    tag: ${DEVNET}
+
+# nethermind
+- client: nethermind
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: NethermindEth/nethermind
+    tag: ${DEVNET}
+
+# reth
+- client: reth
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: paradigmxyz/reth
+    tag: ${DEVNET}

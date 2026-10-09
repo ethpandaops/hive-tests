@@ -8,6 +8,16 @@ the API, so workflows stay on the previous release until a new one is
 published. Writes `EELS_BUILD_ARG_FIXTURES=<download url>` to
 `GITHUB_ENV` and logs the chosen tag to `GITHUB_STEP_SUMMARY` when
 those files are available, and always prints the tag.
+
+Devnet workflows derive the rest of their wiring from the tag: with
+`--devnet-branch devnets/frames/{major}` the EELS branch follows the
+release's major version (`tests-frames-devnet@v1.2.3` builds EELS from
+`devnets/frames/1`) and is written as `EELS_BUILD_ARG_BRANCH`, and with
+`--devnet-name frames-devnet-{major}` the devnet name the clients branch
+on is written as `DEVNET`. Templates may use `{major}`, `{minor}` and
+`{patch}`. Every value is also written to `GITHUB_OUTPUT` as
+`fixtures_tag`, `fixtures_url`, `eels_branch` and `devnet` so a
+preparation job can hand them to the test matrix.
 """
 
 import argparse
@@ -51,6 +61,14 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--prefix", required=True, help="release tag family")
     parser.add_argument("--asset", required=True, help="fixtures asset name")
+    parser.add_argument(
+        "--devnet-branch",
+        help="EELS branch template, e.g. devnets/frames/{major}",
+    )
+    parser.add_argument(
+        "--devnet-name",
+        help="devnet name template, e.g. frames-devnet-{major}",
+    )
     args = parser.parse_args()
 
     tag = os.environ.get("FIXTURES_TAG", "").strip()
@@ -64,15 +82,38 @@ def main() -> None:
         "https://github.com/ethereum/execution-specs/releases/download/"
         f"{tag}/{args.asset}"
     )
+    major, minor, patch = version_key(tag)
+    version = {"major": major, "minor": minor, "patch": patch}
+    env = {"EELS_BUILD_ARG_FIXTURES": url}
+    outputs = {"fixtures_tag": tag, "fixtures_url": url}
+    if args.devnet_branch:
+        branch = args.devnet_branch.format(**version)
+        env["EELS_BUILD_ARG_BRANCH"] = branch
+        outputs["eels_branch"] = branch
+    if args.devnet_name:
+        devnet = args.devnet_name.format(**version)
+        env["DEVNET"] = devnet
+        outputs["devnet"] = devnet
+
     print(tag)
     github_env = os.environ.get("GITHUB_ENV")
     if github_env:
         with open(github_env, "a") as env_file:
-            env_file.write(f"EELS_BUILD_ARG_FIXTURES={url}\n")
+            for key, value in env.items():
+                env_file.write(f"{key}={value}\n")
+    github_output = os.environ.get("GITHUB_OUTPUT")
+    if github_output:
+        with open(github_output, "a") as output_file:
+            for key, value in outputs.items():
+                output_file.write(f"{key}={value}\n")
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
         with open(summary, "a") as summary_file:
             summary_file.write(f"Using fixtures release: `{tag}`\n")
+            if args.devnet_branch:
+                summary_file.write(f"Building EELS from: `{branch}`\n")
+            if args.devnet_name:
+                summary_file.write(f"Client branches: `{devnet}`\n")
 
 
 if __name__ == "__main__":
