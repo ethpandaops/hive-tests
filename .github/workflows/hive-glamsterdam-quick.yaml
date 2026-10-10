@@ -107,7 +107,7 @@ jobs:
       HIVE_PARALLEL_TX_PROCESSING_DISABLED: "true"
       HIVE_AMSTERDAM_TIMESTAMP: "1777456800"
       EELS_BUILD_ARG_FIXTURES: "https://github.com/ethereum/execution-specs/releases/download/tests@v21.0.1/fixtures.tar.gz"
-      EELS_BUILD_ARG_BRANCH: "forks/amsterdam"
+      EELS_BUILD_ARG_BRANCH: "forks/bogota"
     runs-on: >-
       ${{
         matrix.simulator == 'ethereum/rpc-compat' && 'ubuntu-latest' ||
