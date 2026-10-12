@@ -54,8 +54,8 @@ env:
   GOPROXY: "${{ vars.GOPROXY }}"
   # Hive action environment variables
   S3_BUCKET: hive-results
-  S3_PATH: focil-quick
-  S3_PUBLIC_URL: https://hive.ethpandaops.io/#/test/focil-quick/
+  S3_PATH: heze-quick
+  S3_PUBLIC_URL: https://hive.ethpandaops.io/#/test/heze-quick/
   INSTALL_RCLONE_VERSION: v1.68.2
   # Flags used for all simulators
   GLOBAL_EXTRA_FLAGS: >-

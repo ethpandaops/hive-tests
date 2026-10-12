@@ -56,8 +56,8 @@ env:
   GOPROXY: "${{ vars.GOPROXY }}"
   # Hive action environment variables
   S3_BUCKET: hive-results
-  S3_PATH: frames
-  S3_PUBLIC_URL: https://hive.ethpandaops.io/#/test/frames/
+  S3_PATH: bogota
+  S3_PUBLIC_URL: https://hive.ethpandaops.io/#/test/bogota/
   INSTALL_RCLONE_VERSION: v1.68.2
   # Flags used for all simulators
   GLOBAL_EXTRA_FLAGS: >-
