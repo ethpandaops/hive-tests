@@ -1,7 +1,7 @@
-name: Hive - Frames Quick
+name: Hive - Bogota
 on:
   schedule:
-    - cron: "45 14 * * *"
+    - cron: "45 15 * * *"
   workflow_dispatch:
     inputs:
       fixtures_tag:
@@ -30,15 +30,15 @@ on:
         description: GitHub repository and tag for hive (repo@tag)
       client_file:
         type: choice
-        default: frames-git.yaml
+        default: bogota-git.yaml
         description: >-
           Client file under .github/configs/hive/ defining how each client
           is built. The default builds every client from source from its
-          bogota-devnet-N branch; frames.yaml uses the prebuilt
+          bogota-devnet-N branch; bogota.yaml uses the prebuilt
           ethpandaops images for that branch instead.
         options:
-          - frames-git.yaml
-          - frames.yaml
+          - bogota-git.yaml
+          - bogota.yaml
       client_config:
         type: string
         default: ""
@@ -56,8 +56,8 @@ env:
   GOPROXY: "${{ vars.GOPROXY }}"
   # Hive action environment variables
   S3_BUCKET: hive-results
-  S3_PATH: frames-quick
-  S3_PUBLIC_URL: https://hive.ethpandaops.io/#/test/frames-quick/
+  S3_PATH: frames
+  S3_PUBLIC_URL: https://hive.ethpandaops.io/#/test/frames/
   INSTALL_RCLONE_VERSION: v1.68.2
   # Flags used for all simulators
   GLOBAL_EXTRA_FLAGS: >-
@@ -69,7 +69,7 @@ env:
     --sim.parallelism=6
     --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
-    --sim.limit='.*8141.*'
+    --sim.limit='.*fork_Bogota.*'
     --sim.limit.exact=false
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-rlp simulator
@@ -77,7 +77,7 @@ env:
     --sim.parallelism=6
     --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
-    --sim.limit='.*8141.*'
+    --sim.limit='.*fork_Bogota.*'
     --sim.limit.exact=false
     --sim.loglevel=3
 
@@ -114,7 +114,7 @@ jobs:
         id: client_config
         env:
           HIVE_VERSION: ${{ inputs.hive_version || 'ethereum/hive@master' }}
-          CLIENT_FILE: ${{ inputs.client_file || 'frames-git.yaml' }}
+          CLIENT_FILE: ${{ inputs.client_file || 'bogota-git.yaml' }}
           CLIENT_CONFIG: ${{ inputs.client_config }}
           DEVNET: ${{ steps.fixtures.outputs.devnet }}
         run: |
@@ -124,7 +124,7 @@ jobs:
             --file "$CLIENT_FILE" --var "DEVNET=$DEVNET"
 
   test:
-    timeout-minutes: 2160
+    timeout-minutes: 4320
     needs: prepare
     env:
       # BAL-specific environment variables
@@ -135,7 +135,7 @@ jobs:
       EELS_BUILD_ARG_BRANCH: ${{ needs.prepare.outputs.eels_branch }}
     runs-on: >-
       ${{
-        contains(matrix.simulator, 'ethereum/eels/') && 'self-hosted-ghr-size-xl-do-x64' ||
+        contains(matrix.simulator, 'ethereum/eels/') && 'self-hosted-ghr-size-ccx33-x64' ||
         'ubuntu-latest'
       }}
     concurrency:

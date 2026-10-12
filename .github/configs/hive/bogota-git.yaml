@@ -1,4 +1,4 @@
-# Hive client file for the frames workflows:
+# Hive client file for the bogota workflows:
 # every client built from source.
 #
 # `${DEVNET}` is the devnet the fixtures release targets, bogota-devnet-N for
@@ -8,7 +8,7 @@
 #
 # Every client is built from source inside the run (dockerfile: git) from its
 # bogota-devnet-N branch, with no dependency on the ethpandaops image builder.
-# frames.yaml uses the prebuilt images instead, select it with the client_file
+# bogota.yaml uses the prebuilt images instead, select it with the client_file
 # input of a manual workflow dispatch.
 
 # ethrex
