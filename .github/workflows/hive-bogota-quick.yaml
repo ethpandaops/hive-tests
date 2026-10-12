@@ -1,19 +1,21 @@
-name: Hive - Focil
+name: Hive - Bogota Quick
 on:
   schedule:
-    - cron: "45 17 * * *"
+    - cron: "45 14 * * *"
   workflow_dispatch:
     inputs:
       fixtures_tag:
         type: string
         default: ""
         description: >-
-          Pin a fixtures release tag e.g. tests-focil-devnet@v0.1.0.
-          Empty resolves the greatest published tests-focil-devnet tag.
+          Pin a fixtures release tag e.g. tests-bogota-devnet@v1.1.0.
+          Empty resolves the greatest published tests-bogota-devnet tag.
+          The EELS branch (devnets/bogota/N) and the client branches
+          (bogota-devnet-N) follow the tag's major version.
       client:
         type: string
-        default: '"besu","nethermind","ethrex","nimbus-el","reth"'
-        description: Comma-separated list of clients to test .e.g besu, nethermind, ethrex, nimbus-el, reth
+        default: '"go-ethereum","nethermind","ethrex","reth"'
+        description: Comma-separated list of clients to test .e.g go-ethereum, nethermind, ethrex, reth
       simulator:
         type: string
         default: >-
@@ -28,15 +30,15 @@ on:
         description: GitHub repository and tag for hive (repo@tag)
       client_file:
         type: choice
-        default: heze-devnet-2.yaml
+        default: bogota-git.yaml
         description: >-
           Client file under .github/configs/hive/ defining how each client
-          is built. The default is the best available source per client
-          (prebuilt ethpandaops images where they exist); the -git file
-          builds every client from source.
+          is built. The default builds every client from source from its
+          bogota-devnet-N branch; bogota.yaml uses the prebuilt
+          ethpandaops images for that branch instead.
         options:
-          - heze-devnet-2.yaml
-          - heze-devnet-2-git.yaml
+          - bogota-git.yaml
+          - bogota.yaml
       client_config:
         type: string
         default: ""
@@ -54,8 +56,8 @@ env:
   GOPROXY: "${{ vars.GOPROXY }}"
   # Hive action environment variables
   S3_BUCKET: hive-results
-  S3_PATH: focil
-  S3_PUBLIC_URL: https://hive.ethpandaops.io/#/test/focil/
+  S3_PATH: bogota-quick
+  S3_PUBLIC_URL: https://hive.ethpandaops.io/#/test/bogota-quick/
   INSTALL_RCLONE_VERSION: v1.68.2
   # Flags used for all simulators
   GLOBAL_EXTRA_FLAGS: >-
@@ -67,7 +69,7 @@ env:
     --sim.parallelism=6
     --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
-    --sim.limit='.*fork_Bogota.*'
+    --sim.limit='.*8141.*'
     --sim.limit.exact=false
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-rlp simulator
@@ -75,7 +77,7 @@ env:
     --sim.parallelism=6
     --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
-    --sim.limit='.*fork_Bogota.*'
+    --sim.limit='.*8141.*'
     --sim.limit.exact=false
     --sim.loglevel=3
 
@@ -87,6 +89,9 @@ jobs:
       hive_tag: ${{ steps.client_config.outputs.hive_tag }}
       # Hive client file (YAML) rendered from .github/configs/hive/
       client_config: ${{ steps.client_config.outputs.client_config }}
+      # Fixtures release and the EELS branch derived from its major version
+      fixtures_url: ${{ steps.fixtures.outputs.fixtures_url }}
+      eels_branch: ${{ steps.fixtures.outputs.eels_branch }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
@@ -94,28 +99,43 @@ jobs:
           version: "0.12.3"
           enable-cache: true
           cache-dependency-glob: ".github/scripts/*.py"
+      - name: Resolve fixtures release
+        id: fixtures
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FIXTURES_TAG: ${{ inputs.fixtures_tag }}
+        run: |
+          python3 .github/scripts/resolve_fixtures_release.py \
+            --prefix tests-bogota-devnet \
+            --asset fixtures_bogota-devnet.tar.gz \
+            --devnet-branch 'devnets/bogota/{major}' \
+            --devnet-name 'bogota-devnet-{major}'
       - name: Render client config
         id: client_config
         env:
           HIVE_VERSION: ${{ inputs.hive_version || 'ethereum/hive@master' }}
-          CLIENT_FILE: ${{ inputs.client_file || 'heze-devnet-2.yaml' }}
+          CLIENT_FILE: ${{ inputs.client_file || 'bogota-git.yaml' }}
           CLIENT_CONFIG: ${{ inputs.client_config }}
+          DEVNET: ${{ steps.fixtures.outputs.devnet }}
         run: |
           echo "hive_repo=${HIVE_VERSION%@*}" >> "$GITHUB_OUTPUT"
           echo "hive_tag=${HIVE_VERSION#*@}" >> "$GITHUB_OUTPUT"
-          uv run --script .github/scripts/render_client_config.py --file "$CLIENT_FILE"
+          uv run --script .github/scripts/render_client_config.py \
+            --file "$CLIENT_FILE" --var "DEVNET=$DEVNET"
 
   test:
-    timeout-minutes: 4320
+    timeout-minutes: 2160
     needs: prepare
     env:
       # BAL-specific environment variables
       HIVE_PARALLEL_TX_PROCESSING_DISABLED: "true"
       HIVE_AMSTERDAM_TIMESTAMP: "1777456800"
-      EELS_BUILD_ARG_BRANCH: "devnets/focil/0"
+      # Both follow the resolved fixtures release, see the prepare job
+      EELS_BUILD_ARG_FIXTURES: ${{ needs.prepare.outputs.fixtures_url }}
+      EELS_BUILD_ARG_BRANCH: ${{ needs.prepare.outputs.eels_branch }}
     runs-on: >-
       ${{
-        contains(matrix.simulator, 'ethereum/eels/') && 'self-hosted-ghr-size-ccx33-x64' ||
+        contains(matrix.simulator, 'ethereum/eels/') && 'self-hosted-ghr-size-xl-do-x64' ||
         'ubuntu-latest'
       }}
     concurrency:
@@ -126,10 +146,9 @@ jobs:
       matrix:
         client: >-
           ${{ fromJSON(format('[{0}]', inputs.client || '
-            "besu",
+            "go-ethereum",
             "nethermind",
             "ethrex",
-            "nimbus-el",
             "reth"
           '))}}
         simulator: >-
@@ -139,14 +158,6 @@ jobs:
           '))}}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Resolve fixtures release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          FIXTURES_TAG: ${{ inputs.fixtures_tag }}
-        run: |
-          python3 .github/scripts/resolve_fixtures_release.py \
-            --prefix tests-focil-devnet \
-            --asset fixtures_focil-devnet.tar.gz
       - uses: ethpandaops/hive-github-action/helpers/self-hosted-runner-dependencies@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
         if: runner.environment != 'github-hosted'
       - uses: ethpandaops/actions/docker-login@a91b7a8dd6a264f5e845ac2aa52d2d6f24e6d01d

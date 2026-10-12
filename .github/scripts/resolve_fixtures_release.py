@@ -10,9 +10,9 @@ published. Writes `EELS_BUILD_ARG_FIXTURES=<download url>` to
 those files are available, and always prints the tag.
 
 Devnet workflows derive the rest of their wiring from the tag: with
-`--devnet-branch devnets/frames/{major}` the EELS branch follows the
-release's major version (`tests-frames-devnet@v1.2.3` builds EELS from
-`devnets/frames/1`) and is written as `EELS_BUILD_ARG_BRANCH`, and with
+`--devnet-branch devnets/bogota/{major}` the EELS branch follows the
+release's major version (`tests-bogota-devnet@v1.2.3` builds EELS from
+`devnets/bogota/1`) and is written as `EELS_BUILD_ARG_BRANCH`, and with
 `--devnet-name bogota-devnet-{major}` the devnet name the clients branch
 on is written as `DEVNET`. Templates may use `{major}`, `{minor}` and
 `{patch}`. Every value is also written to `GITHUB_OUTPUT` as
@@ -63,7 +63,7 @@ def main() -> None:
     parser.add_argument("--asset", required=True, help="fixtures asset name")
     parser.add_argument(
         "--devnet-branch",
-        help="EELS branch template, e.g. devnets/frames/{major}",
+        help="EELS branch template, e.g. devnets/bogota/{major}",
     )
     parser.add_argument(
         "--devnet-name",
