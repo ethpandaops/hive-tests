@@ -28,15 +28,15 @@ on:
         description: GitHub repository and tag for hive (repo@tag)
       client_file:
         type: choice
-        default: focil-devnet-0.yaml
+        default: heze-devnet-2.yaml
         description: >-
           Client file under .github/configs/hive/ defining how each client
           is built. The default is the best available source per client
           (prebuilt ethpandaops images where they exist); the -git file
           builds every client from source.
         options:
-          - focil-devnet-0.yaml
-          - focil-devnet-0-git.yaml
+          - heze-devnet-2.yaml
+          - heze-devnet-2-git.yaml
       client_config:
         type: string
         default: ""
@@ -98,7 +98,7 @@ jobs:
         id: client_config
         env:
           HIVE_VERSION: ${{ inputs.hive_version || 'ethereum/hive@master' }}
-          CLIENT_FILE: ${{ inputs.client_file || 'focil-devnet-0.yaml' }}
+          CLIENT_FILE: ${{ inputs.client_file || 'heze-devnet-2.yaml' }}
           CLIENT_CONFIG: ${{ inputs.client_config }}
         run: |
           echo "hive_repo=${HIVE_VERSION%@*}" >> "$GITHUB_OUTPUT"

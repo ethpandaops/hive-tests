@@ -1,7 +1,7 @@
-# Hive client file for the focil-devnet-0 workflows:
+# Hive client file for the heze-devnet-2 workflows:
 # every client built from source.
 #
-# Alternative to focil-devnet-0.yaml, for tip-of-branch builds when an image is stale or
+# Alternative to heze-devnet-2.yaml, for tip-of-branch builds when an image is stale or
 # missing. Select it with the client_file input of a manual workflow dispatch.
 
 # besu
@@ -10,7 +10,7 @@
   dockerfile: git
   build_args:
     github: besu-eth/besu
-    tag: focil-devnet-0
+    tag: heze-devnet-2
 
 # ethrex
 - client: ethrex
@@ -18,7 +18,7 @@
   dockerfile: git
   build_args:
     github: lambdaclass/ethrex
-    tag: focil-devnet-0
+    tag: heze-devnet-2
 
 # nethermind
 - client: nethermind
@@ -26,7 +26,7 @@
   dockerfile: git
   build_args:
     github: NethermindEth/nethermind
-    tag: focil-devnet-0
+    tag: heze-devnet-2
 
 # nimbus-el
 - client: nimbus-el
@@ -34,7 +34,7 @@
   dockerfile: git
   build_args:
     github: status-im/nimbus-eth1
-    tag: focil-devnet-0
+    tag: heze-devnet-2
 
 # reth
 - client: reth
@@ -42,4 +42,4 @@
   dockerfile: git
   build_args:
     github: paradigmxyz/reth
-    tag: focil-devnet-0
+    tag: heze-devnet-2
