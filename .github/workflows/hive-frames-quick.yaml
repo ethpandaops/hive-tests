@@ -8,9 +8,9 @@ on:
         type: string
         default: ""
         description: >-
-          Pin a fixtures release tag e.g. tests-frames-devnet@v1.0.0.
-          Empty resolves the greatest published tests-frames-devnet tag.
-          The EELS branch (devnets/frames/N) and the client branches
+          Pin a fixtures release tag e.g. tests-bogota-devnet@v1.1.0.
+          Empty resolves the greatest published tests-bogota-devnet tag.
+          The EELS branch (devnets/bogota/N) and the client branches
           (bogota-devnet-N) follow the tag's major version.
       client:
         type: string
@@ -106,9 +106,9 @@ jobs:
           FIXTURES_TAG: ${{ inputs.fixtures_tag }}
         run: |
           python3 .github/scripts/resolve_fixtures_release.py \
-            --prefix tests-frames-devnet \
-            --asset fixtures_frames-devnet.tar.gz \
-            --devnet-branch 'devnets/frames/{major}' \
+            --prefix tests-bogota-devnet \
+            --asset fixtures_bogota-devnet.tar.gz \
+            --devnet-branch 'devnets/bogota/{major}' \
             --devnet-name 'bogota-devnet-{major}'
       - name: Render client config
         id: client_config

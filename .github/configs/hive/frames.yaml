@@ -2,7 +2,7 @@
 # every client from its prebuilt ethpandaops image.
 #
 # `${DEVNET}` is the devnet the fixtures release targets, bogota-devnet-N for
-# a tests-frames-devnet@vN.y.z release. The workflow fills it in from the
+# a tests-bogota-devnet@vN.y.z release. The workflow fills it in from the
 # resolved release, so a new devnet needs no change here as long as every
 # client branches as bogota-devnet-N in its upstream repository.
 #
