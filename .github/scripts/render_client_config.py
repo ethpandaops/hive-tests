@@ -13,7 +13,7 @@ environment variable is non-empty, that inline YAML instead (the
 `client_config` dispatch input). Fills `${NAME}` placeholders from
 `--var NAME=VALUE` first, so a devnet family can keep one client file
 whose branch or image tag follows the fixtures release (`--var
-DEVNET=frames-devnet-1`), and fails on a placeholder left unfilled.
+DEVNET=bogota-devnet-1`), and fails on a placeholder left unfilled.
 Validates the hive client-file shape so a typo fails here rather than
 as an obscure hive build error, adds a `GOPROXY` build arg to git builds
 of Go clients when the `GOPROXY` environment variable is set, prints

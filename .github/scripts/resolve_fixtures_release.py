@@ -13,7 +13,7 @@ Devnet workflows derive the rest of their wiring from the tag: with
 `--devnet-branch devnets/frames/{major}` the EELS branch follows the
 release's major version (`tests-frames-devnet@v1.2.3` builds EELS from
 `devnets/frames/1`) and is written as `EELS_BUILD_ARG_BRANCH`, and with
-`--devnet-name frames-devnet-{major}` the devnet name the clients branch
+`--devnet-name bogota-devnet-{major}` the devnet name the clients branch
 on is written as `DEVNET`. Templates may use `{major}`, `{minor}` and
 `{patch}`. Every value is also written to `GITHUB_OUTPUT` as
 `fixtures_tag`, `fixtures_url`, `eels_branch` and `devnet` so a
@@ -67,7 +67,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--devnet-name",
-        help="devnet name template, e.g. frames-devnet-{major}",
+        help="devnet name template, e.g. bogota-devnet-{major}",
     )
     args = parser.parse_args()
 
