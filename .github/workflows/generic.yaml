@@ -73,14 +73,14 @@ on:
       client_timeout_overrides:
         type: string
         default: >-
-          { "besu": { "ethereum/eels/consume-engine": 4320, "ethereum/eels/consume-rlp": 5760 } }
+          { "besu": { "ethereum/eels/consume-engine": 4320, "ethereum/eels/consume-rlp": 5760 }, "nethermind": { "ethereum/eels/consume-engine": 2160 } }
         description: >-
           JSON object mapping client name to simulator to a job timeout in
           minutes that takes precedence over timeout_minutes for that
           client and simulator (with tests@v21.0.0, besu needs ~60h for
           eels/consume-engine, more than the 28h the daily triggers allow,
           and ~74h for eels/consume-rlp, more than the 48h its trigger
-          allows)
+          allows; nethermind needs ~30h for eels/consume-engine)
 
 
 env:
