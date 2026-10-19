@@ -153,9 +153,6 @@ jobs:
             "ethereum/eels/consume-rlp",
             "ethereum/eels/execute-blobs"
           '))}}
-        exclude:
-          - client: ethrex
-            simulator: ethereum/eels/consume-enginex
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ethpandaops/hive-github-action/helpers/self-hosted-runner-dependencies@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
