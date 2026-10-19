@@ -5,19 +5,23 @@ Picks the greatest published `<prefix>@vX.Y.Z` release of
 ethereum/execution-specs, or validates a pinned tag from the
 `FIXTURES_TAG` environment variable. Draft releases are invisible to
 the API, so workflows stay on the previous release until a new one is
-published. Writes `EELS_BUILD_ARG_FIXTURES=<download url>` to
-`GITHUB_ENV` and logs the chosen tag to `GITHUB_STEP_SUMMARY` when
-those files are available, and always prints the tag.
+published. Logs the chosen tag to `GITHUB_STEP_SUMMARY` when that file
+is available, and always prints the tag.
 
-Devnet workflows derive the rest of their wiring from the tag: with
-`--devnet-branch devnets/bogota/{major}` the EELS branch follows the
-release's major version (`tests-bogota-devnet@v1.2.3` builds EELS from
-`devnets/bogota/1`) and is written as `EELS_BUILD_ARG_BRANCH`, and with
+The EELS simulators run the images execution-specs publishes for its
+releases, selected with `--sim.buildarg tag=`, which is written to
+`GITHUB_ENV` as `EELS_IMAGE_TAG`. Following the greatest release selects
+its line's channel, which also picks up framework fixes: `latest` for
+`tests`, and `bogota-devnet-1` for `tests-bogota-devnet@v1.2.3`. A
+pinned tag selects that release's image, `v21.0.1` or
+`bogota-devnet-v1.2.3`, which never changes.
+
+Devnet workflows derive the client branches from the tag: with
 `--devnet-name bogota-devnet-{major}` the devnet name the clients branch
 on is written as `DEVNET`. Templates may use `{major}`, `{minor}` and
 `{patch}`. Every value is also written to `GITHUB_OUTPUT` as
-`fixtures_tag`, `fixtures_url`, `eels_branch` and `devnet` so a
-preparation job can hand them to the test matrix.
+`fixtures_tag`, `image_tag` and `devnet` so a preparation job can hand
+them to the test matrix.
 """
 
 import argparse
@@ -36,6 +40,19 @@ def version_key(tag: str) -> tuple:
     """Sort key for a `<prefix>@vX.Y.Z` tag."""
     version = tag.split("@v", 1)[1]
     return tuple(int(part) for part in version.split("."))
+
+
+def image_tag(prefix: str, tag: str, pinned: bool) -> str:
+    """EELS simulator image tag for a release: its channel, or itself if pinned."""
+    version = tag.split("@", 1)[1]
+    if prefix == "tests":
+        return version if pinned else "latest"
+    name = prefix.removeprefix("tests-")
+    if not name.endswith("-devnet"):
+        sys.exit(f"{prefix} releases have no EELS simulator images")
+    if pinned:
+        return f"{name}-{version}"
+    return f"{name}-{version_key(tag)[0]}"
 
 
 def resolve(prefix: str) -> str:
@@ -60,11 +77,6 @@ def resolve(prefix: str) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--prefix", required=True, help="release tag family")
-    parser.add_argument("--asset", required=True, help="fixtures asset name")
-    parser.add_argument(
-        "--devnet-branch",
-        help="EELS branch template, e.g. devnets/bogota/{major}",
-    )
     parser.add_argument(
         "--devnet-name",
         help="devnet name template, e.g. bogota-devnet-{major}",
@@ -72,24 +84,18 @@ def main() -> None:
     args = parser.parse_args()
 
     tag = os.environ.get("FIXTURES_TAG", "").strip()
-    if tag:
+    pinned = bool(tag)
+    if pinned:
         if not tag.startswith(f"{args.prefix}@v"):
             sys.exit(f"pinned tag {tag} is not a {args.prefix} release")
     else:
         tag = resolve(args.prefix)
 
-    url = (
-        "https://github.com/ethereum/execution-specs/releases/download/"
-        f"{tag}/{args.asset}"
-    )
     major, minor, patch = version_key(tag)
     version = {"major": major, "minor": minor, "patch": patch}
-    env = {"EELS_BUILD_ARG_FIXTURES": url}
-    outputs = {"fixtures_tag": tag, "fixtures_url": url}
-    if args.devnet_branch:
-        branch = args.devnet_branch.format(**version)
-        env["EELS_BUILD_ARG_BRANCH"] = branch
-        outputs["eels_branch"] = branch
+    image = image_tag(args.prefix, tag, pinned)
+    env = {"EELS_IMAGE_TAG": image}
+    outputs = {"fixtures_tag": tag, "image_tag": image}
     if args.devnet_name:
         devnet = args.devnet_name.format(**version)
         env["DEVNET"] = devnet
@@ -110,8 +116,7 @@ def main() -> None:
     if summary:
         with open(summary, "a") as summary_file:
             summary_file.write(f"Using fixtures release: `{tag}`\n")
-            if args.devnet_branch:
-                summary_file.write(f"Building EELS from: `{branch}`\n")
+            summary_file.write(f"EELS simulator image tag: `{image}`\n")
             if args.devnet_name:
                 summary_file.write(f"Client branches: `{devnet}`\n")
 

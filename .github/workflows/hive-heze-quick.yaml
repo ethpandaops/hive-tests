@@ -8,8 +8,9 @@ on:
         type: string
         default: ""
         description: >-
-          Pin a fixtures release tag e.g. tests-heze-devnet@v2.0.0.
-          Empty resolves the greatest published tests-heze-devnet tag.
+          Pin a fixtures release tag e.g. tests-heze-devnet@v2.0.0 to run
+          that release's EELS simulator image. Empty follows the
+          heze-devnet-N channel of the greatest published tests-heze-devnet tag.
       client:
         type: string
         default: '"besu","nethermind","ethrex","nimbus-el"'
@@ -65,16 +66,14 @@ env:
   # Flags used for the ethereum/eels/consume-engine simulator
   EELS_ENGINE_FLAGS: >-
     --sim.parallelism=6
-    --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
-    --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
+    --sim.buildarg tag=${EELS_IMAGE_TAG}
     --sim.limit='.*7805.*'
     --sim.limit.exact=false
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-rlp simulator
   EELS_RLP_FLAGS: >-
     --sim.parallelism=6
-    --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
-    --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
+    --sim.buildarg tag=${EELS_IMAGE_TAG}
     --sim.limit='.*7805.*'
     --sim.limit.exact=false
     --sim.loglevel=3
@@ -112,7 +111,6 @@ jobs:
       # BAL-specific environment variables
       HIVE_PARALLEL_TX_PROCESSING_DISABLED: "true"
       HIVE_AMSTERDAM_TIMESTAMP: "1777456800"
-      EELS_BUILD_ARG_BRANCH: "devnets/heze/2"
     runs-on: >-
       ${{
         contains(matrix.simulator, 'ethereum/eels/') && 'self-hosted-ghr-size-xl-do-x64' ||
@@ -144,8 +142,7 @@ jobs:
           FIXTURES_TAG: ${{ inputs.fixtures_tag }}
         run: |
           python3 .github/scripts/resolve_fixtures_release.py \
-            --prefix tests-heze-devnet \
-            --asset fixtures_heze-devnet.tar.gz
+            --prefix tests-heze-devnet
       - uses: ethpandaops/hive-github-action/helpers/self-hosted-runner-dependencies@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
         if: runner.environment != 'github-hosted'
       - uses: ethpandaops/actions/docker-login@a91b7a8dd6a264f5e845ac2aa52d2d6f24e6d01d
