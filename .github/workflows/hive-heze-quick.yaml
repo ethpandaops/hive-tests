@@ -12,8 +12,8 @@ on:
           Empty resolves the greatest published tests-heze-devnet tag.
       client:
         type: string
-        default: '"besu","nethermind","ethrex","nimbus-el"'
-        description: Comma-separated list of clients to test .e.g besu, nethermind, ethrex, nimbus-el
+        default: '"besu","nethermind","ethrex","nimbus-el","reth"'
+        description: Comma-separated list of clients to test .e.g besu, nethermind, ethrex, nimbus-el, reth
       simulator:
         type: string
         default: >-
@@ -129,7 +129,8 @@ jobs:
             "besu",
             "nethermind",
             "ethrex",
-            "nimbus-el"
+            "nimbus-el",
+            "reth"
           '))}}
         simulator: >-
           ${{ fromJSON(format('[{0}]', inputs.simulator || '
