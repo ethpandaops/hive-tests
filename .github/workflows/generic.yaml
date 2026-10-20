@@ -6,8 +6,8 @@ on:
         type: string
         default: ""
         description: >-
-          Pin a fixtures release tag e.g. tests@v21.0.1.
-          Empty resolves the greatest published tests tag.
+          Pin a fixtures release tag e.g. tests@v21.0.1 to run that
+          release's EELS simulator image. Empty follows `latest`.
       client:
         type: string
         default: '["go-ethereum","reth","nethermind","nimbus-el","besu","erigon","ethrex"]'
@@ -91,7 +91,6 @@ env:
   S3_PATH: generic
   S3_PUBLIC_URL: https://hive.ethpandaops.io/#/test/generic/
   INSTALL_RCLONE_VERSION: v1.68.2
-  EELS_BUILD_ARG_BRANCH: forks/bogota
   # Flags used for all simulators
   GLOBAL_EXTRA_FLAGS: >-
     --client.checktimelimit=180s
@@ -100,18 +99,15 @@ env:
     --docker.buildoutput
   # Flags used for the ethereum/eels/consume-engine simulator
   EELS_ENGINE_FLAGS: >-
-    --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
-    --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
+    --sim.buildarg tag=${EELS_IMAGE_TAG}
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-enginex simulator
   EELS_ENGINEX_FLAGS: >-
-    --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
-    --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
+    --sim.buildarg tag=${EELS_IMAGE_TAG}
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-rlp simulator
   EELS_RLP_FLAGS: >-
-    --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
-    --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
+    --sim.buildarg tag=${EELS_IMAGE_TAG}
     --sim.loglevel=3
   # Flags used for the ethereum/rpc-compat simulator
   RPC_COMPAT_FLAGS: >-
@@ -183,8 +179,7 @@ jobs:
           FIXTURES_TAG: ${{ inputs.fixtures_tag }}
         run: |
           python3 .github/scripts/resolve_fixtures_release.py \
-            --prefix tests \
-            --asset fixtures.tar.gz
+            --prefix tests
 
       - uses: ethpandaops/actions/docker-login@a91b7a8dd6a264f5e845ac2aa52d2d6f24e6d01d
         with:

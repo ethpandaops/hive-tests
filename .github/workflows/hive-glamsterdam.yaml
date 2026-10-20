@@ -61,28 +61,25 @@ env:
   # Flags used for the ethereum/eels/consume-engine simulator
   EELS_ENGINE_FLAGS: >-
     --sim.parallelism=6
-    --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
-    --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
+    --sim.buildarg tag=${EELS_IMAGE_TAG}
     --sim.limit='.*fork_(Amsterdam|BPO2ToAmsterdamAtTime15k|Osaka).*'
     --sim.limit.exact=false
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-enginex simulator
   EELS_ENGINEX_FLAGS: >-
     --sim.parallelism=4
-    --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
-    --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
+    --sim.buildarg tag=${EELS_IMAGE_TAG}
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-rlp simulator
   EELS_RLP_FLAGS: >-
     --sim.parallelism=6
-    --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
-    --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
+    --sim.buildarg tag=${EELS_IMAGE_TAG}
     --sim.limit='.*fork_(Amsterdam|BPO2ToAmsterdamAtTime15k|Osaka).*'
     --sim.limit.exact=false
     --sim.loglevel=3
   # Flags used for the ethereum/eels/execute-blobs simulator
   EELS_EXECUTE_FLAGS: >-
-    --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
+    --sim.buildarg tag=${EELS_IMAGE_TAG}
     --sim.buildarg fork=Amsterdam
     --sim.loglevel=3
   # Flags used for the ethereum/rpc-compat simulator
@@ -122,8 +119,7 @@ jobs:
       # BAL-specific environment variables
       HIVE_PARALLEL_TX_PROCESSING_DISABLED: "true"
       HIVE_AMSTERDAM_TIMESTAMP: "1777456800"
-      EELS_BUILD_ARG_FIXTURES: "https://github.com/ethereum/execution-specs/releases/download/tests@v21.0.1/fixtures.tar.gz"
-      EELS_BUILD_ARG_BRANCH: "forks/bogota"
+      EELS_IMAGE_TAG: latest
     runs-on: >-
       ${{
         matrix.simulator == 'ethereum/rpc-compat' && 'ubuntu-latest' ||
@@ -153,6 +149,9 @@ jobs:
             "ethereum/eels/consume-rlp",
             "ethereum/eels/execute-blobs"
           '))}}
+        exclude:
+          - client: ethrex
+            simulator: ethereum/eels/consume-enginex
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: ethpandaops/hive-github-action/helpers/self-hosted-runner-dependencies@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
