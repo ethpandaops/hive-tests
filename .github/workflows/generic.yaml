@@ -51,9 +51,11 @@ on:
         type: string
         default: ""
         description: >-
-          Inline hive client file (YAML) that replaces client_file, for
-          example to test a branch or an image that is not in the
-          repository configuration.
+          Inline hive client file (YAML) that replaces the client
+          entries of client_file, for example to test a branch or an
+          image that is not in the repository configuration. The EELS
+          simulator entries of client_file still apply unless it has its
+          own.
       workflow_artifact_upload:
         type: boolean
         default: false

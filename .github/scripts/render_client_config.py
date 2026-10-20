@@ -10,7 +10,10 @@ Render the hive client file a workflow passes to hive-github-action.
 
 Reads `.github/configs/hive/<file>` or, when the `CLIENT_CONFIG`
 environment variable is non-empty, that inline YAML instead (the
-`client_config` dispatch input). Fills `${NAME}` placeholders from
+`client_config` dispatch input). The inline YAML replaces the file's
+client entries. The file's simulator entries still apply unless the
+inline YAML has its own, so testing a client branch keeps the EELS
+image tag and build arguments of the run. Fills `${NAME}` placeholders from
 `--var NAME=VALUE` first, so a devnet family can keep one client file
 whose branch or image tag follows the fixtures release (`--var
 DEVNET=bogota-devnet-1`), and fails on a placeholder left unfilled.
@@ -88,6 +91,29 @@ def validate_simulator(entry: dict, where: str) -> None:
         fail(f"{where} ({simulator}): 'build_args' must map strings to strings")
 
 
+def read(path: str) -> str:
+    """Return the text of a client file."""
+    try:
+        with open(path) as handle:
+            return handle.read()
+    except OSError as err:
+        fail(str(err))
+
+
+def load(source: str, text: str, variables: dict) -> list:
+    """Fill the placeholders of a config text, then parse and validate it."""
+    text = string.Template(text).safe_substitute(variables)
+    unresolved = sorted(string.Template(text).get_identifiers())
+    if unresolved:
+        fail(f"{source}: unresolved placeholders {unresolved}, pass --var")
+    try:
+        entries = yaml.safe_load(text)
+    except yaml.YAMLError as err:
+        fail(f"{source}: invalid YAML: {err}")
+    validate(entries, source)
+    return entries
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -110,26 +136,22 @@ def main() -> None:
             fail(f"--var expects NAME=VALUE, got {assignment!r}")
         variables[name] = value
 
+    path = os.path.join(CONFIG_DIR, args.file)
     inline = os.environ.get("CLIENT_CONFIG", "").strip()
     if inline:
-        source, text = "client_config input", inline
+        source = "client_config input"
+        entries = load(source, inline, variables)
+        # The inline config replaces the client entries. The file's
+        # simulator entries still apply unless it carries its own.
+        if not any("simulator" in entry for entry in entries):
+            entries += [
+                entry
+                for entry in load(path, read(path), variables)
+                if "simulator" in entry
+            ]
     else:
-        source = os.path.join(CONFIG_DIR, args.file)
-        try:
-            with open(source) as handle:
-                text = handle.read()
-        except OSError as err:
-            fail(str(err))
-    template = string.Template(text)
-    text = template.safe_substitute(variables)
-    unresolved = sorted(string.Template(text).get_identifiers())
-    if unresolved:
-        fail(f"{source}: unresolved placeholders {unresolved}, pass --var")
-    try:
-        entries = yaml.safe_load(text)
-    except yaml.YAMLError as err:
-        fail(f"{source}: invalid YAML: {err}")
-    validate(entries, source)
+        source = path
+        entries = load(source, read(path), variables)
 
     goproxy = os.environ.get("GOPROXY", "")
     if goproxy:
