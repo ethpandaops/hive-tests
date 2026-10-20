@@ -8,9 +8,10 @@ on:
         type: string
         default: ""
         description: >-
-          Pin a fixtures release tag e.g. tests-bogota-devnet@v1.1.0.
-          Empty resolves the greatest published tests-bogota-devnet tag.
-          The EELS branch (devnets/bogota/N) and the client branches
+          Pin a fixtures release tag e.g. tests-bogota-devnet@v1.1.0 to
+          run that release's EELS simulator image. Empty follows the
+          bogota-devnet-N image of the greatest published
+          tests-bogota-devnet tag. The client branches
           (bogota-devnet-N) follow the tag's major version.
       client:
         type: string
@@ -44,9 +45,11 @@ on:
         type: string
         default: ""
         description: >-
-          Inline hive client file (YAML) that replaces client_file, for
-          example to test a branch or an image that is not in the
-          repository configuration.
+          Inline hive client file (YAML) that replaces the client
+          entries of client_file, for example to test a branch or an
+          image that is not in the repository configuration. The EELS
+          simulator entries of client_file still apply unless it has its
+          own.
       workflow_artifact_upload:
         type: boolean
         default: true
@@ -68,8 +71,6 @@ env:
   # Flags used for the ethereum/eels/consume-engine simulator
   EELS_ENGINE_FLAGS: >-
     --sim.parallelism=6
-    --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
-    --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
     --sim.limit='.*8141.*'
     --sim.limit.exact=false
     --sim.loglevel=3
@@ -84,8 +85,6 @@ env:
   # Flags used for the ethereum/eels/consume-rlp simulator
   EELS_RLP_FLAGS: >-
     --sim.parallelism=6
-    --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
-    --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
     --sim.limit='.*8141.*'
     --sim.limit.exact=false
     --sim.loglevel=3
@@ -98,9 +97,6 @@ jobs:
       hive_tag: ${{ steps.client_config.outputs.hive_tag }}
       # Hive client file (YAML) rendered from .github/configs/hive/
       client_config: ${{ steps.client_config.outputs.client_config }}
-      # Fixtures release and the EELS branch derived from its major version
-      fixtures_url: ${{ steps.fixtures.outputs.fixtures_url }}
-      eels_branch: ${{ steps.fixtures.outputs.eels_branch }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
@@ -116,8 +112,6 @@ jobs:
         run: |
           python3 .github/scripts/resolve_fixtures_release.py \
             --prefix tests-bogota-devnet \
-            --asset fixtures_bogota-devnet.tar.gz \
-            --devnet-branch 'devnets/bogota/{major}' \
             --devnet-name 'bogota-devnet-{major}'
       - name: Render client config
         id: client_config
@@ -126,11 +120,13 @@ jobs:
           CLIENT_FILE: ${{ inputs.client_file || 'bogota-git.yaml' }}
           CLIENT_CONFIG: ${{ inputs.client_config }}
           DEVNET: ${{ steps.fixtures.outputs.devnet }}
+          EELS_IMAGE_TAG: ${{ steps.fixtures.outputs.image_tag }}
         run: |
           echo "hive_repo=${HIVE_VERSION%@*}" >> "$GITHUB_OUTPUT"
           echo "hive_tag=${HIVE_VERSION#*@}" >> "$GITHUB_OUTPUT"
           uv run --script .github/scripts/render_client_config.py \
-            --file "$CLIENT_FILE" --var "DEVNET=$DEVNET"
+            --file "$CLIENT_FILE" --var "DEVNET=$DEVNET" \
+            --var "EELS_IMAGE_TAG=$EELS_IMAGE_TAG"
 
   test:
     timeout-minutes: 2160
@@ -139,9 +135,6 @@ jobs:
       # BAL-specific environment variables
       HIVE_PARALLEL_TX_PROCESSING_DISABLED: "true"
       HIVE_AMSTERDAM_TIMESTAMP: "1777456800"
-      # Both follow the resolved fixtures release, see the prepare job
-      EELS_BUILD_ARG_FIXTURES: ${{ needs.prepare.outputs.fixtures_url }}
-      EELS_BUILD_ARG_BRANCH: ${{ needs.prepare.outputs.eels_branch }}
     runs-on: >-
       ${{
         contains(matrix.simulator, 'ethereum/eels/') && 'self-hosted-ghr-size-xl-do-x64' ||

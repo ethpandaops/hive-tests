@@ -43,3 +43,26 @@
   build_args:
     github: paradigmxyz/reth
     tag: heze-devnet-2
+
+# EELS simulators (ethereum/eels/*) run the images ethereum/execution-specs
+# publishes. `tag` follows the fixtures_tag input: `heze-devnet-N`, the
+# highest heze-devnet release of devnet N with the framework at the head
+# of its devnets branch, or the pinned release's image, e.g.
+# heze-devnet-v2.0.1. Simulators not listed here use their defaults.
+# To build one from source instead, give it `dockerfile: git` and the
+# execution-specs branch and fixtures release to use:
+#
+# - simulator: ethereum/eels/consume-engine
+#   dockerfile: git
+#   build_args:
+#     branch: devnets/heze/2
+#     fixtures: tests-heze-devnet@v2.0.1
+- simulator: ethereum/eels/consume-engine
+  build_args:
+    tag: ${EELS_IMAGE_TAG}
+- simulator: ethereum/eels/consume-enginex
+  build_args:
+    tag: ${EELS_IMAGE_TAG}
+- simulator: ethereum/eels/consume-rlp
+  build_args:
+    tag: ${EELS_IMAGE_TAG}

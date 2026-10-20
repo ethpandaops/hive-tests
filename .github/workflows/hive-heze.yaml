@@ -8,8 +8,10 @@ on:
         type: string
         default: ""
         description: >-
-          Pin a fixtures release tag e.g. tests-heze-devnet@v2.0.0.
-          Empty resolves the greatest published tests-heze-devnet tag.
+          Pin a fixtures release tag e.g. tests-heze-devnet@v2.0.1 to
+          run that release's EELS simulator image. Empty follows the
+          heze-devnet-N image of the greatest published
+          tests-heze-devnet tag.
       client:
         type: string
         default: '"besu","nethermind","ethrex","nimbus-el","reth"'
@@ -42,9 +44,11 @@ on:
         type: string
         default: ""
         description: >-
-          Inline hive client file (YAML) that replaces client_file, for
-          example to test a branch or an image that is not in the
-          repository configuration.
+          Inline hive client file (YAML) that replaces the client
+          entries of client_file, for example to test a branch or an
+          image that is not in the repository configuration. The EELS
+          simulator entries of client_file still apply unless it has its
+          own.
       workflow_artifact_upload:
         type: boolean
         default: true
@@ -66,24 +70,18 @@ env:
   # Flags used for the ethereum/eels/consume-engine simulator
   EELS_ENGINE_FLAGS: >-
     --sim.parallelism=6
-    --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
-    --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
     --sim.limit='.*fork_Bogota.*'
     --sim.limit.exact=false
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-enginex simulator
   EELS_ENGINEX_FLAGS: >-
     --sim.parallelism=4
-    --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
-    --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
     --sim.limit='.*fork_Bogota.*'
     --sim.limit.exact=false
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-rlp simulator
   EELS_RLP_FLAGS: >-
     --sim.parallelism=6
-    --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
-    --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
     --sim.limit='.*fork_Bogota.*'
     --sim.limit.exact=false
     --sim.loglevel=3
@@ -103,6 +101,15 @@ jobs:
           version: "0.12.3"
           enable-cache: true
           cache-dependency-glob: ".github/scripts/*.py"
+      # The EELS simulator image tag goes into the client file's simulator
+      # entries, so it is resolved before the file is rendered.
+      - name: Resolve fixtures release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FIXTURES_TAG: ${{ inputs.fixtures_tag }}
+        run: |
+          python3 .github/scripts/resolve_fixtures_release.py \
+            --prefix tests-heze-devnet
       - name: Render client config
         id: client_config
         env:
@@ -112,7 +119,8 @@ jobs:
         run: |
           echo "hive_repo=${HIVE_VERSION%@*}" >> "$GITHUB_OUTPUT"
           echo "hive_tag=${HIVE_VERSION#*@}" >> "$GITHUB_OUTPUT"
-          uv run --script .github/scripts/render_client_config.py --file "$CLIENT_FILE"
+          uv run --script .github/scripts/render_client_config.py --file "$CLIENT_FILE" \
+            --var "EELS_IMAGE_TAG=$EELS_IMAGE_TAG"
 
   test:
     timeout-minutes: 4320
@@ -121,7 +129,6 @@ jobs:
       # BAL-specific environment variables
       HIVE_PARALLEL_TX_PROCESSING_DISABLED: "true"
       HIVE_AMSTERDAM_TIMESTAMP: "1777456800"
-      EELS_BUILD_ARG_BRANCH: "devnets/heze/2"
     runs-on: >-
       ${{
         contains(matrix.simulator, 'ethereum/eels/') && 'self-hosted-ghr-size-ccx33-x64' ||
@@ -149,14 +156,6 @@ jobs:
           '))}}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Resolve fixtures release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          FIXTURES_TAG: ${{ inputs.fixtures_tag }}
-        run: |
-          python3 .github/scripts/resolve_fixtures_release.py \
-            --prefix tests-heze-devnet \
-            --asset fixtures_heze-devnet.tar.gz
       - uses: ethpandaops/hive-github-action/helpers/self-hosted-runner-dependencies@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
         if: runner.environment != 'github-hosted'
       - uses: ethpandaops/actions/docker-login@a91b7a8dd6a264f5e845ac2aa52d2d6f24e6d01d
