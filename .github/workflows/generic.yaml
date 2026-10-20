@@ -99,15 +99,12 @@ env:
     --docker.buildoutput
   # Flags used for the ethereum/eels/consume-engine simulator
   EELS_ENGINE_FLAGS: >-
-    --sim.buildarg tag=${EELS_IMAGE_TAG}
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-enginex simulator
   EELS_ENGINEX_FLAGS: >-
-    --sim.buildarg tag=${EELS_IMAGE_TAG}
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-rlp simulator
   EELS_RLP_FLAGS: >-
-    --sim.buildarg tag=${EELS_IMAGE_TAG}
     --sim.loglevel=3
   # Flags used for the ethereum/rpc-compat simulator
   RPC_COMPAT_FLAGS: >-
@@ -135,6 +132,15 @@ jobs:
           version: "0.12.3"
           enable-cache: true
           cache-dependency-glob: ".github/scripts/*.py"
+      # The EELS simulator image tag goes into the client file's simulator
+      # entries, so it is resolved before the file is rendered.
+      - name: Resolve fixtures release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FIXTURES_TAG: ${{ inputs.fixtures_tag }}
+        run: |
+          python3 .github/scripts/resolve_fixtures_release.py \
+            --prefix tests
       - name: Render client config
         id: client_config
         env:
@@ -144,7 +150,8 @@ jobs:
         run: |
           echo "hive_repo=${HIVE_VERSION%@*}" >> "$GITHUB_OUTPUT"
           echo "hive_tag=${HIVE_VERSION#*@}" >> "$GITHUB_OUTPUT"
-          uv run --script .github/scripts/render_client_config.py --file "$CLIENT_FILE"
+          uv run --script .github/scripts/render_client_config.py --file "$CLIENT_FILE" \
+            --var "EELS_IMAGE_TAG=$EELS_IMAGE_TAG"
 
   test:
     timeout-minutes: ${{ fromJSON(inputs.client_timeout_overrides)[matrix.client][matrix.simulator] || fromJSON(inputs.timeout_minutes) }}
@@ -171,15 +178,6 @@ jobs:
         simulator: ${{ fromJSON(inputs.simulator)}}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Resolve fixtures release
-        if: contains(matrix.simulator, 'ethereum/eels/')
-        env:
-          GH_TOKEN: ${{ github.token }}
-          FIXTURES_TAG: ${{ inputs.fixtures_tag }}
-        run: |
-          python3 .github/scripts/resolve_fixtures_release.py \
-            --prefix tests
 
       - uses: ethpandaops/actions/docker-login@a91b7a8dd6a264f5e845ac2aa52d2d6f24e6d01d
         with:

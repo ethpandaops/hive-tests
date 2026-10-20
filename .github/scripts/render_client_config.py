@@ -14,8 +14,10 @@ environment variable is non-empty, that inline YAML instead (the
 `--var NAME=VALUE` first, so a devnet family can keep one client file
 whose branch or image tag follows the fixtures release (`--var
 DEVNET=bogota-devnet-1`), and fails on a placeholder left unfilled.
-Validates the hive client-file shape so a typo fails here rather than
-as an obscure hive build error, adds a `GOPROXY` build arg to git builds
+The file may also carry simulator entries (`simulator`, `dockerfile`,
+`build_args`), which hive's `--config` applies to the simulators a run
+selects with `--sim`. Validates the hive config-file shape so a typo
+fails here rather than as an obscure hive build error, adds a `GOPROXY` build arg to git builds
 of Go clients when the `GOPROXY` environment variable is set, prints
 the result, and writes it as the `client_config` step output when
 `GITHUB_OUTPUT` is set.
@@ -33,6 +35,7 @@ CONFIG_DIR = ".github/configs/hive"
 # Clients whose Dockerfile.git declares ARG GOPROXY.
 GOPROXY_CLIENTS = {"go-ethereum", "erigon"}
 ALLOWED_KEYS = {"client", "nametag", "dockerfile", "build_args"}
+SIMULATOR_KEYS = {"simulator", "dockerfile", "build_args"}
 
 
 def fail(message: str) -> None:
@@ -41,13 +44,16 @@ def fail(message: str) -> None:
 
 
 def validate(entries, source: str) -> None:
-    """Check the hive client-file shape hive expects."""
+    """Check the hive config-file shape hive expects."""
     if not isinstance(entries, list) or not entries:
         fail(f"{source}: expected a non-empty list of client entries")
     for index, entry in enumerate(entries):
         where = f"{source}: entry {index}"
         if not isinstance(entry, dict):
             fail(f"{where}: expected a mapping")
+        if "simulator" in entry:
+            validate_simulator(entry, where)
+            continue
         unknown = set(entry) - ALLOWED_KEYS
         if unknown:
             fail(f"{where}: unknown keys {sorted(unknown)}")
@@ -63,6 +69,23 @@ def validate(entries, source: str) -> None:
                 isinstance(k, str) and isinstance(v, str) for k, v in build_args.items()
             ):
                 fail(f"{where} ({client}): 'build_args' must map strings to strings")
+
+
+def validate_simulator(entry: dict, where: str) -> None:
+    """Check a simulator entry of hive's --config file."""
+    unknown = set(entry) - SIMULATOR_KEYS
+    if unknown:
+        fail(f"{where}: unknown keys {sorted(unknown)}")
+    simulator = entry["simulator"]
+    if not isinstance(simulator, str) or not simulator:
+        fail(f"{where}: 'simulator' must be a non-empty string")
+    if "dockerfile" in entry and not isinstance(entry["dockerfile"], str):
+        fail(f"{where} ({simulator}): 'dockerfile' must be a string")
+    build_args = entry.get("build_args", {})
+    if not isinstance(build_args, dict) or not all(
+        isinstance(k, str) and isinstance(v, str) for k, v in build_args.items()
+    ):
+        fail(f"{where} ({simulator}): 'build_args' must map strings to strings")
 
 
 def main() -> None:
@@ -111,7 +134,7 @@ def main() -> None:
     goproxy = os.environ.get("GOPROXY", "")
     if goproxy:
         for entry in entries:
-            if entry.get("dockerfile") == "git" and entry["client"] in GOPROXY_CLIENTS:
+            if entry.get("dockerfile") == "git" and entry.get("client") in GOPROXY_CLIENTS:
                 entry.setdefault("build_args", {}).setdefault("GOPROXY", goproxy)
 
     rendered = yaml.safe_dump(entries, sort_keys=False, default_flow_style=False)
