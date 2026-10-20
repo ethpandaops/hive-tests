@@ -20,10 +20,11 @@ on:
         type: string
         default: >-
           "ethereum/eels/consume-engine",
+          "ethereum/eels/consume-enginex",
           "ethereum/eels/consume-rlp"
         description: >-
           Comma-separated list of simulators to test
-          .e.g ethereum/eels/consume-engine, ethereum/eels/consume-rlp
+          .e.g ethereum/eels/consume-engine, ethereum/eels/consume-enginex, ethereum/eels/consume-rlp
       hive_version:
         type: string
         default: ethereum/hive@master
@@ -67,6 +68,14 @@ env:
   # Flags used for the ethereum/eels/consume-engine simulator
   EELS_ENGINE_FLAGS: >-
     --sim.parallelism=6
+    --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
+    --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
+    --sim.limit='.*8141.*'
+    --sim.limit.exact=false
+    --sim.loglevel=3
+  # Flags used for the ethereum/eels/consume-enginex simulator
+  EELS_ENGINEX_FLAGS: >-
+    --sim.parallelism=4
     --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
     --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
     --sim.limit='.*8141.*'
@@ -154,6 +163,7 @@ jobs:
         simulator: >-
           ${{ fromJSON(format('[{0}]', inputs.simulator || '
             "ethereum/eels/consume-engine",
+            "ethereum/eels/consume-enginex",
             "ethereum/eels/consume-rlp"
           '))}}
     steps:
@@ -174,6 +184,7 @@ jobs:
           extra_flags: >-
             ${{ env.GLOBAL_EXTRA_FLAGS }}
             ${{ matrix.simulator == 'ethereum/eels/consume-engine' && env.EELS_ENGINE_FLAGS || '' }}
+            ${{ matrix.simulator == 'ethereum/eels/consume-enginex' && env.EELS_ENGINEX_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-rlp' && env.EELS_RLP_FLAGS || '' }}
           s3_upload: true
           s3_bucket: ${{ env.S3_BUCKET }}
