@@ -1,7 +1,5 @@
 name: Hive - Glamsterdam
 on:
-  schedule:
-    - cron: "45 13 * * *"
   workflow_dispatch:
     inputs:
       fixtures_tag:
@@ -190,6 +188,5 @@ jobs:
           s3_public_url: ${{ env.S3_PUBLIC_URL }}
           rclone_config: ${{ secrets.HIVE_RCLONE_CONFIG }}
           rclone_version: ${{ env.INSTALL_RCLONE_VERSION }}
-          workflow_artifact_upload: >-
-            ${{ github.event_name == 'schedule' || inputs.workflow_artifact_upload }}
+          workflow_artifact_upload: ${{ inputs.workflow_artifact_upload }}
           website_upload: true
