@@ -15,30 +15,79 @@ on:
         required: false
         default: 'generic'
         type: string
+      full:
+        description: 'Rebuild the index from every result file, e.g. after a hive upgrade changes its format'
+        required: false
+        default: false
+        type: boolean
 
 env:
   INSTALL_RCLONE_VERSION: v1.68.2
 
 jobs:
   generate-index:
-    runs-on: self-hosted-ghr-size-ccx33-x64
+    runs-on: ubuntu-latest
     concurrency:
       group: "generate-index-${{ inputs.s3-bucket || 'hive-results' }}-${{ inputs.s3-path || 'generic' }}"
       cancel-in-progress: true
 
     steps:
-    - uses: ethpandaops/hive-github-action/helpers/self-hosted-runner-dependencies@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
-      if: runner.environment != 'github-hosted'
-
-    - name: Run Index Generator
-      uses: ethpandaops/hive-github-action@master # v0.6.0-unreleased
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - name: Resolve the hive commit
+      id: hive
+      run: echo "sha=$(git ls-remote https://github.com/ethereum/hive refs/heads/master | cut -f1)" >> "$GITHUB_OUTPUT"
+    # hiveview is built once per hive commit.
+    - name: Restore hiveview
+      id: hiveview
+      uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
       with:
-        skip_tests: true
-        s3_upload: true
-        s3_bucket: ${{ inputs.s3-bucket || 'hive-results' }}
-        s3_path: ${{ inputs.s3-path || 'generic' }}
+        path: hiveview
+        key: hiveview-${{ runner.os }}-${{ steps.hive.outputs.sha }}
+    - if: steps.hiveview.outputs.cache-hit != 'true'
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        repository: ethereum/hive
+        ref: ${{ steps.hive.outputs.sha }}
+        path: hive
+    - if: steps.hiveview.outputs.cache-hit != 'true'
+      uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+      with:
+        go-version-file: hive/go.mod
+        cache: false
+    - name: Build hiveview
+      if: steps.hiveview.outputs.cache-hit != 'true'
+      working-directory: hive
+      run: go build -o ../hiveview ./cmd/hiveview
+    - uses: AnimMouse/setup-rclone@0d99fa3878a334d3e307c1a8372ad55550fdaea7 # v1.11.0
+      with:
         rclone_config: ${{ secrets.HIVE_RCLONE_CONFIG }}
-        rclone_version: ${{ env.INSTALL_RCLONE_VERSION }}
-        website_upload: false
-        website_listing_limit: '3000'
-        website_index_generation: true
+        version: ${{ env.INSTALL_RCLONE_VERSION }}
+
+    # Only the result files the current listing lacks are fetched, usually
+    # one run, rather than every result file kept for the path. They are
+    # fetched in batches, so a full rebuild fits on the runner's disk.
+    - name: Update the results index
+      env:
+        RESULTS: s3:${{ inputs.s3-bucket || 'hive-results' }}/${{ inputs.s3-path || 'generic' }}
+        FULL: ${{ inputs.full }}
+        LIMIT: '3000'
+      run: |
+        if [ "$FULL" = "true" ] || ! rclone cat "$RESULTS/listing.jsonl" > listing.jsonl; then
+          : > listing.jsonl
+        fi
+        rclone lsf --files-only --include "*.json" "$RESULTS/results" > names.txt
+        python3 .github/scripts/update_listing.py missing \
+          --listing listing.jsonl --names names.txt --limit "$LIMIT" > missing.txt
+        echo "Fetching $(wc -l < missing.txt) of $(wc -l < names.txt) result files"
+        split -l 10 missing.txt batch.
+        : > new.jsonl
+        for batch in batch.*; do
+          [ -e "$batch" ] || continue
+          mkdir -p results
+          rclone copy --no-traverse --transfers=10 --files-from "$batch" "$RESULTS/results" results
+          ./hiveview --listing --limit="$LIMIT" --logdir results >> new.jsonl
+          rm -rf results
+        done
+        python3 .github/scripts/update_listing.py merge \
+          --listing listing.jsonl --new new.jsonl --names names.txt --limit "$LIMIT" > updated.jsonl
+        rclone copyto updated.jsonl "$RESULTS/listing.jsonl"
