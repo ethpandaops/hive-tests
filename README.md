@@ -60,7 +60,7 @@ These workflows are lightweight dispatchers that trigger the main [`generic.yaml
 
 ### Devnet Dashboards
 
-The bogota, heze and glamsterdam workflows ([`hive-bogota.yaml`](.github/workflows/hive-bogota.yaml), [`hive-heze.yaml`](.github/workflows/hive-heze.yaml), [`hive-glamsterdam.yaml`](.github/workflows/hive-glamsterdam.yaml) and their `-quick` versions) have no schedule. Every 15 minutes [`watch-images.yaml`](.github/workflows/watch-images.yaml) checks the client and EELS simulator images they test and dispatches a run when one changes: a new client image runs that client, a new EELS image runs that simulator for every client with an image, and a new devnet runs everything. Every `hive-*.yaml` workflow without a schedule is watched this way.
+The bogota, heze and glamsterdam workflows ([`hive-bogota.yaml`](.github/workflows/hive-bogota.yaml), [`hive-heze.yaml`](.github/workflows/hive-heze.yaml), [`hive-glamsterdam.yaml`](.github/workflows/hive-glamsterdam.yaml) and their `-quick` versions) have no schedule. Every 5 minutes [`watch-images.yaml`](.github/workflows/watch-images.yaml) checks the client and EELS simulator images they test and dispatches a run when one changes: a new client image runs that client, a new fixtures release in an EELS image runs that simulator for every client with an image, and a new devnet runs everything. Every `hive-*.yaml` workflow without a schedule is watched this way.
 
 ### Manual Execution
 

@@ -76,6 +76,15 @@ class ImageTests(unittest.TestCase):
         ]
         self.assertEqual(watch_images.images(entries, ["besu"], ["ethereum/eels/consume-rlp"]), {})
 
+    def test_reads_the_release_an_eels_image_carries(self) -> None:
+        def config(**labels: str) -> dict:
+            return {"config": {"Labels": {f"org.ethereum.eest.{k.replace('_', '-')}": v for k, v in labels.items()}}}
+
+        self.assertEqual(watch_images.eels_release(config(fixtures_release="tests@v21.0.1")), "tests@v21.0.1")
+        self.assertEqual(watch_images.eels_release(config(tests_release="tests-heze-devnet@v3.0.0")), "tests-heze-devnet@v3.0.0")
+        self.assertIsNone(watch_images.eels_release(config()))
+        self.assertIsNone(watch_images.eels_release({"config": {"Labels": None}}))
+
     def test_maps_images_to_registries(self) -> None:
         self.assertEqual(watch_images.registry(f"{HUB}/besu"), ("docker-hub", "ethpandaops/besu"))
         self.assertEqual(watch_images.registry(f"{GHCR}/consume-engine"), ("ghcr", "ethereum/execution-specs/hive/consume-engine"))

@@ -5,12 +5,12 @@ name: Hive - Watch Images
 # .github/scripts/watch_images.py.
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 env:
   INSTALL_RCLONE_VERSION: v1.68.2
-  # The image digests of the previous check.
+  # The image digests and EELS releases of the previous check.
   STATE_DIR: s3:hive-results
   STATE_FILE: watch-images.json
 
