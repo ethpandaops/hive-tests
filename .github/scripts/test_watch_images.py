@@ -60,7 +60,7 @@ class ImageTests(unittest.TestCase):
         entries = render_client_config.load(
             str(path), path.read_text(), {"DEVNET": "heze-devnet-3", "EELS_IMAGE_TAG": "heze-devnet-3"}
         )
-        images = watch_images.images(entries, ["besu"], ["ethereum/eels/consume-engine"])
+        images = watch_images.image_refs(entries, ["besu"], ["ethereum/eels/consume-engine"])
         self.assertEqual(
             images,
             {
@@ -74,7 +74,7 @@ class ImageTests(unittest.TestCase):
             {"client": "besu", "dockerfile": "git", "build_args": {"github": "x/besu", "tag": "main"}},
             {"simulator": "ethereum/eels/consume-rlp", "dockerfile": "git", "build_args": {"tag": "v1"}},
         ]
-        self.assertEqual(watch_images.images(entries, ["besu"], ["ethereum/eels/consume-rlp"]), {})
+        self.assertEqual(watch_images.image_refs(entries, ["besu"], ["ethereum/eels/consume-rlp"]), {})
 
     def test_reads_the_release_an_eels_image_carries(self) -> None:
         def config(**labels: str) -> dict:
@@ -84,13 +84,6 @@ class ImageTests(unittest.TestCase):
         self.assertEqual(watch_images.eels_release(config(tests_release="tests-heze-devnet@v3.0.0")), "tests-heze-devnet@v3.0.0")
         self.assertIsNone(watch_images.eels_release(config()))
         self.assertIsNone(watch_images.eels_release({"config": {"Labels": None}}))
-
-    def test_maps_images_to_registries(self) -> None:
-        self.assertEqual(watch_images.registry(f"{HUB}/besu"), ("docker-hub", "ethpandaops/besu"))
-        self.assertEqual(watch_images.registry(f"{GHCR}/consume-engine"), ("ghcr", "ethereum/execution-specs/hive/consume-engine"))
-        self.assertEqual(watch_images.registry("ubuntu"), ("docker-hub", "library/ubuntu"))
-        self.assertIsNone(watch_images.registry("quay.io/x/y"))
-
 
 class PlanTests(unittest.TestCase):
     def test_nothing_changed(self) -> None:

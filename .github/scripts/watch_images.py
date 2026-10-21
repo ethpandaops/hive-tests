@@ -33,7 +33,6 @@ import json
 import os
 import re
 import sys
-import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -42,6 +41,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import images  # noqa: E402
 import render_client_config  # noqa: E402
 import resolve_fixtures_release  # noqa: E402
 
@@ -52,16 +52,6 @@ EELS = "ethereum/eels/"
 EELS_IMAGE = "ghcr.io/ethereum/execution-specs/hive/{name}"
 # Labels the EELS images record their fixtures or tests release in.
 EELS_RELEASE_LABELS = ("org.ethereum.eest.fixtures-release", "org.ethereum.eest.tests-release")
-# Registries that mirror Docker Hub.
-DOCKER_HUB_MIRRORS = ("docker.ethquokkaops.io/dh/",)
-MANIFEST_TYPES = ", ".join(
-    [
-        "application/vnd.oci.image.index.v1+json",
-        "application/vnd.docker.distribution.manifest.list.v2+json",
-        "application/vnd.oci.image.manifest.v1+json",
-        "application/vnd.docker.distribution.manifest.v2+json",
-    ]
-)
 
 
 def split_list(value: str) -> list:
@@ -99,7 +89,7 @@ def watched() -> dict:
     return result
 
 
-def images(entries: list, clients: list, simulators: list) -> dict:
+def image_refs(entries: list, clients: list, simulators: list) -> dict:
     """Return the image each default client and EELS simulator runs from."""
     result = {}
     for entry in entries:
@@ -111,58 +101,6 @@ def images(entries: list, clients: list, simulators: list) -> dict:
             image = args.get("image", EELS_IMAGE.format(name=simulator.removeprefix(EELS)))
             result[f"simulator:{simulator}"] = f"{image}:{args['tag']}"
     return result
-
-
-def registry(image: str) -> tuple:
-    """Return the registry and repository of an image, or None if unsupported."""
-    for mirror in DOCKER_HUB_MIRRORS:
-        image = image.removeprefix(mirror)
-    if image.startswith("ghcr.io/"):
-        return "ghcr", image.removeprefix("ghcr.io/")
-    if "." in image.split("/")[0]:
-        return None
-    return "docker-hub", image if "/" in image else f"library/{image}"
-
-
-def fetch(request: urllib.request.Request):
-    """Open a request, or return None when the image does not exist."""
-    try:
-        return urllib.request.urlopen(request, timeout=30)
-    except urllib.error.HTTPError as err:
-        if err.code == 404:
-            return None
-        raise
-
-
-def ghcr(repository: str, path: str, token: str, method: str = "GET"):
-    """Open a ghcr registry API path, or return None if it does not exist."""
-    request = urllib.request.Request(
-        f"https://ghcr.io/v2/{repository}/{path}",
-        method=method,
-        headers={"Authorization": f"Bearer {token}", "Accept": MANIFEST_TYPES},
-    )
-    return fetch(request)
-
-
-def ghcr_token(repository: str) -> str:
-    """Return an anonymous pull token for a ghcr repository."""
-    url = f"https://ghcr.io/token?scope=repository:{repository}:pull"
-    return json.load(urllib.request.urlopen(url, timeout=30))["token"]
-
-
-def digest(image: str) -> str | None:
-    """Return the digest of an image, or None if it is not published."""
-    reference, tag = image.rsplit(":", 1)
-    source = registry(reference)
-    if source is None:
-        return None
-    kind, repository = source
-    if kind == "docker-hub":
-        url = f"https://hub.docker.com/v2/repositories/{repository}/tags/{tag}"
-        response = fetch(urllib.request.Request(url))
-        return json.load(response)["digest"] if response else None
-    response = ghcr(repository, f"manifests/{tag}", ghcr_token(repository), method="HEAD")
-    return response.headers["Docker-Content-Digest"] if response else None
 
 
 def eels_release(config: dict) -> str | None:
@@ -177,20 +115,20 @@ def simulator_version(image: str) -> str | None:
     None if the image is not published.
     """
     reference, tag = image.rsplit(":", 1)
-    source = registry(reference)
+    source = images.registry(reference)
     if source is None or source[0] != "ghcr":
-        return digest(image)
+        return images.digest(image)
     repository = source[1]
-    token = ghcr_token(repository)
-    response = ghcr(repository, f"manifests/{tag}", token)
+    token = images.ghcr_token(repository)
+    response = images.ghcr(repository, f"manifests/{tag}", token)
     if response is None:
         return None
     manifest = json.load(response)
     if "manifests" in manifest:
         platforms = [m for m in manifest["manifests"] if m.get("platform", {}).get("architecture") == "amd64"]
-        manifest = json.load(ghcr(repository, f"manifests/{(platforms or manifest['manifests'])[0]['digest']}", token))
-    config = json.load(ghcr(repository, f"blobs/{manifest['config']['digest']}", token))
-    return eels_release(config) or digest(image)
+        manifest = json.load(images.ghcr(repository, f"manifests/{(platforms or manifest['manifests'])[0]['digest']}", token))
+    config = json.load(images.ghcr(repository, f"blobs/{manifest['config']['digest']}", token))
+    return eels_release(config) or images.digest(image)
 
 
 def current(workflows: dict) -> dict:
@@ -208,9 +146,9 @@ def current(workflows: dict) -> dict:
         path = CONFIG_DIR / config["client_file"]
         entries = render_client_config.load(str(path), path.read_text(), variables)
         state[name] = {}
-        for key, image in images(entries, config["clients"], config["simulators"]).items():
+        for key, image in image_refs(entries, config["clients"], config["simulators"]).items():
             if image not in digests:
-                digests[image] = simulator_version(image) if key.startswith("simulator:") else digest(image)
+                digests[image] = simulator_version(image) if key.startswith("simulator:") else images.digest(image)
             state[name][key] = f"{image}@{digests[image] or ''}"
     return state
 
