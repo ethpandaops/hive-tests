@@ -10,55 +10,59 @@
 # baseimage/tag). Image tags follow the branches ethpandaops builds:
 # https://github.com/ethpandaops/eth-client-docker-image-builder/blob/master/branches.yaml
 # heze-git.yaml builds every client from source instead.
+#
+# hive runs on amd64, so each client uses the -linux-amd64 tag of its build,
+# which is published as soon as the amd64 build finishes rather than after
+# the arm64 one as well.
 
 # besu
 - client: besu
   nametag: default
   build_args:
     baseimage: docker.ethquokkaops.io/dh/ethpandaops/besu
-    tag: ${DEVNET}
+    tag: ${DEVNET}-linux-amd64
 
 # erigon
 - client: erigon
   nametag: default
   build_args:
     baseimage: docker.ethquokkaops.io/dh/ethpandaops/erigon
-    tag: ${DEVNET}
+    tag: ${DEVNET}-linux-amd64
 
 # ethrex
 - client: ethrex
   nametag: default
   build_args:
     baseimage: docker.ethquokkaops.io/dh/ethpandaops/ethrex
-    tag: ${DEVNET}
+    tag: ${DEVNET}-linux-amd64
 
 # go-ethereum
 - client: go-ethereum
   nametag: default
   build_args:
     baseimage: docker.ethquokkaops.io/dh/ethpandaops/geth
-    tag: ${DEVNET}
+    tag: ${DEVNET}-linux-amd64
 
 # nethermind
 - client: nethermind
   nametag: default
   build_args:
     baseimage: docker.ethquokkaops.io/dh/ethpandaops/nethermind
-    tag: ${DEVNET}
+    tag: ${DEVNET}-linux-amd64
 
 # nimbus-el
 - client: nimbus-el
   nametag: default
   build_args:
     baseimage: docker.ethquokkaops.io/dh/ethpandaops/nimbus-eth1
-    tag: ${DEVNET}
+    tag: ${DEVNET}-linux-amd64
 
 # reth
 - client: reth
   nametag: default
   build_args:
     baseimage: docker.ethquokkaops.io/dh/ethpandaops/reth
-    tag: ${DEVNET}
+    tag: ${DEVNET}-linux-amd64
 
 # EELS simulators (ethereum/eels/*) run the images ethereum/execution-specs
 # publishes. `tag` follows the fixtures_tag input: `heze-devnet-N`, the

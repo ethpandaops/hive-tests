@@ -64,7 +64,7 @@ class ImageTests(unittest.TestCase):
         self.assertEqual(
             images,
             {
-                "client:besu": f"{HUB}/besu:heze-devnet-3",
+                "client:besu": f"{HUB}/besu:heze-devnet-3-linux-amd64",
                 "simulator:ethereum/eels/consume-engine": f"{GHCR}/consume-engine:heze-devnet-3",
             },
         )
