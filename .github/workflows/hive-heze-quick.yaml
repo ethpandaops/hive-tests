@@ -76,8 +76,6 @@ env:
   # Flags used for the ethereum/eels/consume-enginex simulator
   EELS_ENGINEX_FLAGS: >-
     --sim.parallelism=4
-    --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
-    --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
     --sim.limit='.*7805.*'
     --sim.limit.exact=false
     --sim.loglevel=3
