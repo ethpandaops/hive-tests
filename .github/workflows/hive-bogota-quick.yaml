@@ -102,6 +102,8 @@ jobs:
           version: "0.12.3"
           enable-cache: true
           cache-dependency-glob: ".github/scripts/*.py"
+      # The EELS simulator image tag goes into the client file's simulator
+      # entries, so it is resolved before the file is rendered.
       - name: Resolve fixtures release
         id: fixtures
         env:

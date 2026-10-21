@@ -11,7 +11,8 @@ on:
           Pin a fixtures release tag e.g. tests-heze-devnet@v2.0.1 to
           run that release's EELS simulator image. Empty follows the
           heze-devnet-N image of the greatest published
-          tests-heze-devnet tag.
+          tests-heze-devnet tag. The client branches
+          (heze-devnet-N) follow the tag's major version.
       client:
         type: string
         default: '"besu","nethermind","ethrex","nimbus-el","reth"'
@@ -31,15 +32,15 @@ on:
         description: GitHub repository and tag for hive (repo@tag)
       client_file:
         type: choice
-        default: heze-devnet-2.yaml
+        default: heze.yaml
         description: >-
           Client file under .github/configs/hive/ defining how each client
-          is built. The default is the best available source per client
-          (prebuilt ethpandaops images where they exist); the -git file
-          builds every client from source.
+          is built. The default uses the prebuilt ethpandaops images of the
+          heze-devnet-N branch; heze-git.yaml builds every client from source
+          from that branch instead.
         options:
-          - heze-devnet-2.yaml
-          - heze-devnet-2-git.yaml
+          - heze.yaml
+          - heze-git.yaml
       client_config:
         type: string
         default: ""
@@ -104,22 +105,27 @@ jobs:
       # The EELS simulator image tag goes into the client file's simulator
       # entries, so it is resolved before the file is rendered.
       - name: Resolve fixtures release
+        id: fixtures
         env:
           GH_TOKEN: ${{ github.token }}
           FIXTURES_TAG: ${{ inputs.fixtures_tag }}
         run: |
           python3 .github/scripts/resolve_fixtures_release.py \
-            --prefix tests-heze-devnet
+            --prefix tests-heze-devnet \
+            --devnet-name 'heze-devnet-{major}'
       - name: Render client config
         id: client_config
         env:
           HIVE_VERSION: ${{ inputs.hive_version || 'ethereum/hive@master' }}
-          CLIENT_FILE: ${{ inputs.client_file || 'heze-devnet-2.yaml' }}
+          CLIENT_FILE: ${{ inputs.client_file || 'heze.yaml' }}
           CLIENT_CONFIG: ${{ inputs.client_config }}
+          DEVNET: ${{ steps.fixtures.outputs.devnet }}
+          EELS_IMAGE_TAG: ${{ steps.fixtures.outputs.image_tag }}
         run: |
           echo "hive_repo=${HIVE_VERSION%@*}" >> "$GITHUB_OUTPUT"
           echo "hive_tag=${HIVE_VERSION#*@}" >> "$GITHUB_OUTPUT"
-          uv run --script .github/scripts/render_client_config.py --file "$CLIENT_FILE" \
+          uv run --script .github/scripts/render_client_config.py \
+            --file "$CLIENT_FILE" --var "DEVNET=$DEVNET" \
             --var "EELS_IMAGE_TAG=$EELS_IMAGE_TAG"
 
   test:

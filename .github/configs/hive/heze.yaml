@@ -1,48 +1,50 @@
-# Hive client file for the heze-devnet-2 workflows:
-# every client built from source.
+# Hive client file for the heze workflows, and their default:
+# every client from its prebuilt ethpandaops image.
 #
-# Alternative to heze-devnet-2.yaml, for tip-of-branch builds when an image is stale or
-# missing. Select it with the client_file input of a manual workflow dispatch.
+# `${DEVNET}` is the devnet the fixtures release targets, heze-devnet-N for
+# a tests-heze-devnet@vN.y.z release. The workflow fills it in from the
+# resolved release, so a new devnet needs no change here as long as every
+# client branches as heze-devnet-N in its upstream repository.
+#
+# Every client uses the prebuilt ethpandaops image for that branch (build_args
+# baseimage/tag). Image tags follow the branches ethpandaops builds:
+# https://github.com/ethpandaops/eth-client-docker-image-builder/blob/master/branches.yaml
+# heze-git.yaml builds every client from source instead.
 
 # besu
 - client: besu
   nametag: default
-  dockerfile: git
   build_args:
-    github: besu-eth/besu
-    tag: heze-devnet-2
+    baseimage: docker.ethquokkaops.io/dh/ethpandaops/besu
+    tag: ${DEVNET}
 
 # ethrex
 - client: ethrex
   nametag: default
-  dockerfile: git
   build_args:
-    github: lambdaclass/ethrex
-    tag: heze-devnet-2
+    baseimage: docker.ethquokkaops.io/dh/ethpandaops/ethrex
+    tag: ${DEVNET}
 
 # nethermind
 - client: nethermind
   nametag: default
-  dockerfile: git
   build_args:
-    github: NethermindEth/nethermind
-    tag: heze-devnet-2
+    baseimage: docker.ethquokkaops.io/dh/ethpandaops/nethermind
+    tag: ${DEVNET}
 
 # nimbus-el
 - client: nimbus-el
   nametag: default
-  dockerfile: git
   build_args:
-    github: status-im/nimbus-eth1
-    tag: heze-devnet-2
+    baseimage: docker.ethquokkaops.io/dh/ethpandaops/nimbus-eth1
+    tag: ${DEVNET}
 
 # reth
 - client: reth
   nametag: default
-  dockerfile: git
   build_args:
-    github: paradigmxyz/reth
-    tag: heze-devnet-2
+    baseimage: docker.ethquokkaops.io/dh/ethpandaops/reth
+    tag: ${DEVNET}
 
 # EELS simulators (ethereum/eels/*) run the images ethereum/execution-specs
 # publishes. `tag` follows the fixtures_tag input: `heze-devnet-N`, the
