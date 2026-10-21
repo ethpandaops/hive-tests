@@ -27,9 +27,12 @@ env:
 jobs:
   generate-index:
     runs-on: ubuntu-latest
+    # Each test job dispatches this once its results are uploaded. One update
+    # runs per path with the newest request queued behind it, so updates never
+    # race on listing.jsonl.
     concurrency:
       group: "generate-index-${{ inputs.s3-bucket || 'hive-results' }}-${{ inputs.s3-path || 'generic' }}"
-      cancel-in-progress: true
+      cancel-in-progress: false
 
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
