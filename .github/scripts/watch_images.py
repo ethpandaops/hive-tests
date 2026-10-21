@@ -8,9 +8,10 @@
 """
 Dispatch the hive dashboard workflows whose images changed.
 
-Watches every `hive-*.yaml` workflow without a schedule. For each, it
-resolves the fixtures release and renders the default client file as
-the workflow's prepare job does, then reads the current digest of each
+Watches every `hive-*.yaml` dashboard workflow without a schedule, and
+every `sim-ethereum-eels-*.yaml` wrapper without one, which runs an EELS
+simulator through `generic.yaml`. For each, it resolves the fixtures
+release and renders the default client file as the prepare job does, then reads the current digest of each
 default client's image and each default EELS simulator's image. Against
 the digests of the previous check (`--previous`):
 
@@ -64,28 +65,68 @@ def join_list(names: list) -> str:
     return ",".join(f'"{name}"' for name in names)
 
 
-def settings(workflow: dict) -> dict:
-    """Return what a dashboard workflow runs by default."""
-    inputs = workflow[True]["workflow_dispatch"]["inputs"]
+def release_settings(workflow: dict) -> dict:
+    """Return the fixtures release family and devnet a workflow resolves."""
     steps = workflow["jobs"]["prepare"]["steps"]
     (resolver,) = [step["run"] for step in steps if step.get("name") == "Resolve fixtures release"]
     devnet = re.search(r"--devnet-name '([^']+)'", resolver)
     return {
-        "clients": split_list(inputs["client"]["default"]),
-        "simulators": split_list(inputs["simulator"]["default"]),
-        "client_file": inputs["client_file"]["default"],
         "prefix": re.search(r"--prefix (\S+)", resolver).group(1),
         "devnet": devnet.group(1) if devnet else None,
     }
 
 
+def settings(name: str, workflow: dict) -> dict:
+    """Return what a dashboard workflow runs by default."""
+    inputs = workflow[True]["workflow_dispatch"]["inputs"]
+    return {
+        "workflow": name,
+        "clients": split_list(inputs["client"]["default"]),
+        "simulators": split_list(inputs["simulator"]["default"]),
+        "client_file": inputs["client_file"]["default"],
+        "inputs": {},
+        **release_settings(workflow),
+    }
+
+
+def wrapper_settings(wrapper: dict, generic: dict) -> dict | None:
+    """Return what an EELS wrapper runs through generic.yaml, or None.
+
+    The wrapper's own dispatch inputs are kept, so a run it starts queues
+    and times out as the wrapper's runs do.
+    """
+    scripts = [step["with"]["script"] for job in wrapper["jobs"].values() for step in job["steps"] if "script" in step.get("with", {})]
+    script = scripts[0] if len(scripts) == 1 else ""
+    fields = dict(re.findall(r"(workflow_id|simulator|concurrency_group|timeout_minutes): '([^']+)'", script))
+    if fields.get("workflow_id") != "generic.yaml" or "simulator" not in fields:
+        return None
+    simulators = json.loads(fields["simulator"])
+    if not all(s.startswith(EELS) for s in simulators):
+        return None
+    inputs = generic[True]["workflow_dispatch"]["inputs"]
+    return {
+        "workflow": "generic.yaml",
+        "clients": json.loads(inputs["client"]["default"]),
+        "simulators": simulators,
+        "client_file": inputs["client_file"]["default"],
+        "inputs": {key: fields[key] for key in ("concurrency_group", "timeout_minutes") if key in fields},
+        "json_lists": True,
+        **release_settings(generic),
+    }
+
+
 def watched() -> dict:
-    """Return the settings of each dashboard workflow without a schedule."""
+    """Return the settings of each watched workflow without a schedule."""
     result = {}
     for path in sorted(WORKFLOWS.glob("hive-*.yaml")):
         workflow = yaml.safe_load(path.read_text())
         if "schedule" not in workflow[True]:
-            result[path.name] = settings(workflow)
+            result[path.name] = settings(path.name, workflow)
+    generic = yaml.safe_load((WORKFLOWS / "generic.yaml").read_text())
+    for path in sorted(WORKFLOWS.glob("sim-ethereum-eels-*.yaml")):
+        wrapper = yaml.safe_load(path.read_text())
+        if "schedule" not in wrapper[True] and (config := wrapper_settings(wrapper, generic)):
+            result[path.name] = config
     return result
 
 
@@ -172,10 +213,16 @@ def plan(state: dict, previous: dict, workflows: dict) -> list:
             c for c in workflows[name]["clients"] if not images_now.get(f"client:{c}", "").endswith("@")
         ]
         if simulators and runnable:
-            dispatches.append((name, {"client": join_list(runnable), "simulator": join_list(simulators)}))
+            dispatches.append(run(workflows[name], runnable, simulators))
         if clients and unchanged:
-            dispatches.append((name, {"client": join_list(clients), "simulator": join_list(unchanged)}))
+            dispatches.append(run(workflows[name], clients, unchanged))
     return dispatches
+
+
+def run(config: dict, clients: list, simulators: list) -> tuple:
+    """Return the workflow and inputs that run these clients and simulators."""
+    lists = json.dumps if config.get("json_lists") else join_list
+    return config["workflow"], {**config["inputs"], "client": lists(clients), "simulator": lists(simulators)}
 
 
 def dispatch(workflow: str, inputs: dict) -> None:

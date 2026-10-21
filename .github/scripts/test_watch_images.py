@@ -10,7 +10,7 @@ watch_images = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(watch_images)
 render_client_config = watch_images.render_client_config
 
-DASHBOARD = {"clients": ["besu", "geth"], "simulators": ["engine", "rlp"]}
+DASHBOARD = {"workflow": "hive-x.yaml", "inputs": {}, "clients": ["besu", "geth"], "simulators": ["engine", "rlp"]}
 HUB = "docker.ethquokkaops.io/dh/ethpandaops"
 GHCR = "ghcr.io/ethereum/execution-specs/hive"
 
@@ -35,12 +35,34 @@ class WorkflowTests(unittest.TestCase):
 
     def test_reads_what_a_dashboard_runs_by_default(self) -> None:
         workflow = yaml.safe_load((watch_images.WORKFLOWS / "hive-heze.yaml").read_text())
-        settings = watch_images.settings(workflow)
+        settings = watch_images.settings("hive-heze.yaml", workflow)
         self.assertEqual(settings["prefix"], "tests-heze-devnet")
         self.assertEqual(settings["devnet"], "heze-devnet-{major}")
         self.assertEqual(settings["client_file"], "heze.yaml")
         self.assertIn("besu", settings["clients"])
         self.assertIn("ethereum/eels/consume-engine", settings["simulators"])
+
+    def test_reads_what_an_eels_wrapper_runs_through_generic(self) -> None:
+        generic = yaml.safe_load((watch_images.WORKFLOWS / "generic.yaml").read_text())
+        wrapper = yaml.safe_load((watch_images.WORKFLOWS / "sim-ethereum-eels-consume-rlp.yaml").read_text())
+        settings = watch_images.wrapper_settings(wrapper, generic)
+        self.assertEqual(settings["workflow"], "generic.yaml")
+        self.assertEqual(settings["simulators"], ["ethereum/eels/consume-rlp"])
+        self.assertEqual(settings["inputs"], {"concurrency_group": "eels-consume-rlp", "timeout_minutes": "2880"})
+        self.assertEqual(settings["prefix"], "tests")
+        self.assertIn("besu", settings["clients"])
+
+    def test_skips_wrappers_of_other_simulators(self) -> None:
+        generic = yaml.safe_load((watch_images.WORKFLOWS / "generic.yaml").read_text())
+        wrapper = yaml.safe_load((watch_images.WORKFLOWS / "sim-ethereum-engine.yaml").read_text())
+        self.assertIsNone(watch_images.wrapper_settings(wrapper, generic))
+
+    def test_watches_every_eels_wrapper_without_a_schedule(self) -> None:
+        watched = watch_images.watched()
+        for path in sorted(watch_images.WORKFLOWS.glob("sim-ethereum-eels-*.yaml")):
+            scheduled = "schedule" in yaml.safe_load(path.read_text())[True]
+            with self.subTest(workflow=path.name):
+                self.assertNotEqual(path.name in watched, scheduled)
 
     def test_watches_every_dashboard_without_a_schedule(self) -> None:
         watched = watch_images.watched()
@@ -117,6 +139,14 @@ class PlanTests(unittest.TestCase):
     def test_new_devnet_runs_every_client_with_an_image(self) -> None:
         now = state(client_besu="besu:2@", client_geth="geth:2@e", simulator_engine="engine:2@f", simulator_rlp="rlp:2@g")
         self.assertEqual(plan(now), [("hive-x.yaml", {"client": '"geth"', "simulator": '"engine","rlp"'})])
+
+    def test_generic_runs_take_json_lists_and_the_wrapper_inputs(self) -> None:
+        config = {**DASHBOARD, "workflow": "generic.yaml", "json_lists": True, "inputs": {"concurrency_group": "eels-x"}}
+        now = state(client_besu="besu:1@new", client_geth="geth:1@b", simulator_engine="engine:1@c", simulator_rlp="rlp:1@d")
+        self.assertEqual(
+            watch_images.plan(now, BEFORE, {"hive-x.yaml": config}),
+            [("generic.yaml", {"concurrency_group": "eels-x", "client": '["besu"]', "simulator": '["engine", "rlp"]'})],
+        )
 
     def test_image_appearing_later_runs_its_client(self) -> None:
         before = state(client_besu="besu:2@", client_geth="geth:2@e", simulator_engine="engine:2@f", simulator_rlp="rlp:2@g")
