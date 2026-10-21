@@ -4,7 +4,7 @@ This repository contains automated testing workflows for Ethereum execution clie
 
 ## Overview
 
-Hive Tests runs comprehensive compatibility and conformance tests across multiple Ethereum execution clients to ensure they properly implement the Ethereum protocol. The tests are executed automatically on a daily schedule and can also be triggered manually.
+Hive Tests runs comprehensive compatibility and conformance tests across multiple Ethereum execution clients to ensure they properly implement the Ethereum protocol. The tests run automatically, on a daily schedule or when the images they test change, and can also be triggered manually.
 
 ## Supported Clients
 
@@ -57,6 +57,10 @@ The repository includes additional specialized workflows that target specific co
 
 
 These workflows are lightweight dispatchers that trigger the main [`generic.yaml`](.github/workflows/generic.yaml) workflow with specific parameters for targeted testing scenarios. They use different concurrency groups to avoid conflicts and can be manually triggered through the GitHub Actions interface.
+
+### Devnet Dashboards
+
+The bogota and heze workflows ([`hive-bogota.yaml`](.github/workflows/hive-bogota.yaml), [`hive-heze.yaml`](.github/workflows/hive-heze.yaml) and their `-quick` versions) have no schedule. Every 15 minutes [`watch-images.yaml`](.github/workflows/watch-images.yaml) checks the client and EELS simulator images they test and dispatches a run when one changes: a new client image runs that client, a new EELS image runs that simulator for every client with an image, and a new devnet runs everything. Every `hive-*.yaml` workflow without a schedule is watched this way.
 
 ### Manual Execution
 

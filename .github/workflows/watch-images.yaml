@@ -1,0 +1,48 @@
+name: Hive - Watch Images
+
+# Runs the dashboard workflows without a schedule (hive-*.yaml) when the
+# client or EELS simulator images they test change, see
+# .github/scripts/watch_images.py.
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+env:
+  INSTALL_RCLONE_VERSION: v1.68.2
+  # The image digests of the previous check.
+  STATE_DIR: s3:hive-results
+  STATE_FILE: watch-images.json
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: watch-images
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.12.3"
+          enable-cache: true
+          cache-dependency-glob: ".github/scripts/*.py"
+      - uses: AnimMouse/setup-rclone@0d99fa3878a334d3e307c1a8372ad55550fdaea7 # v1.11.0
+        with:
+          rclone_config: ${{ secrets.HIVE_RCLONE_CONFIG }}
+          version: ${{ env.INSTALL_RCLONE_VERSION }}
+      - name: Dispatch the runs of changed images
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # A missing state starts over, recording the images without
+          # dispatching. Any other failure to read it stops the check.
+          listed=$(rclone lsf --files-only --include "$STATE_FILE" "$STATE_DIR/")
+          if [ -n "$listed" ]; then
+            rclone cat "$STATE_DIR/$STATE_FILE" > previous.json
+          else
+            echo '{}' > previous.json
+          fi
+          uv run --script .github/scripts/watch_images.py \
+            --previous previous.json --state state.json --dispatch | tee -a "$GITHUB_STEP_SUMMARY"
+          rclone copyto state.json "$STATE_DIR/$STATE_FILE"
