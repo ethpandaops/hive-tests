@@ -12,8 +12,9 @@ name: Hive - Watch Images
 #
 #   gh workflow run watch-images.yaml -R ethpandaops/hive-tests
 on:
+  # A safety net for missed image-pushed events, off the busy top of the hour.
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '23 * * * *'
   workflow_dispatch:
   repository_dispatch:
     types: [image-pushed]
