@@ -58,9 +58,9 @@ The repository includes additional specialized workflows that target specific co
 
 These workflows are lightweight dispatchers that trigger the main [`generic.yaml`](.github/workflows/generic.yaml) workflow with specific parameters for targeted testing scenarios. They use different concurrency groups to avoid conflicts and can be manually triggered through the GitHub Actions interface.
 
-### Devnet Dashboards
+### Dashboard Runs
 
-The bogota, heze and glamsterdam workflows ([`hive-bogota.yaml`](.github/workflows/hive-bogota.yaml), [`hive-heze.yaml`](.github/workflows/hive-heze.yaml), [`hive-glamsterdam.yaml`](.github/workflows/hive-glamsterdam.yaml) and their `-quick` versions) have no schedule. Every 5 minutes [`watch-images.yaml`](.github/workflows/watch-images.yaml) checks the client and EELS simulator images they test and dispatches a run when one changes: a new client image runs that client, a new fixtures release in an EELS image runs that simulator for every client with an image, and a new devnet runs everything. Every `hive-*.yaml` workflow without a schedule is watched this way.
+The bogota, heze and glamsterdam workflows ([`hive-bogota.yaml`](.github/workflows/hive-bogota.yaml), [`hive-heze.yaml`](.github/workflows/hive-heze.yaml), [`hive-glamsterdam.yaml`](.github/workflows/hive-glamsterdam.yaml) and their `-quick` versions) have no schedule. Every 5 minutes [`watch-images.yaml`](.github/workflows/watch-images.yaml) checks the client and EELS simulator images they test and dispatches a run when one changes: a new client image runs that client, a new fixtures release in an EELS image runs that simulator for every client with an image, and a new devnet runs everything. Every `hive-*.yaml` workflow without a schedule is watched this way. Anything that knows an image changed, such as the end of an image build, can start a check right away with `gh workflow run watch-images.yaml -R ethpandaops/hive-tests`, using a token allowed to run workflows in this repository.
 
 ### Manual Execution
 
