@@ -7,9 +7,10 @@
 # client branches as bogota-devnet-N in its upstream repository.
 #
 # Every client is built from source inside the run (dockerfile: git) from its
-# bogota-devnet-N branch, with no dependency on the ethpandaops image builder.
-# bogota.yaml uses the prebuilt images instead, select it with the client_file
-# input of a manual workflow dispatch.
+# bogota-devnet-N branch, with no dependency on the ethpandaops image builder,
+# for tip-of-branch builds when an image is stale or missing. Select it with
+# the client_file input of a manual workflow dispatch. bogota.yaml, the
+# default, uses the prebuilt images.
 
 # ethrex
 - client: ethrex

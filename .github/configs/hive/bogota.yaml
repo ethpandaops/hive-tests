@@ -1,4 +1,4 @@
-# Hive client file for the bogota workflows:
+# Hive client file for the bogota workflows, and their default:
 # every client from its prebuilt ethpandaops image.
 #
 # `${DEVNET}` is the devnet the fixtures release targets, bogota-devnet-N for
@@ -7,8 +7,7 @@
 # client branches as bogota-devnet-N in its upstream repository.
 #
 # Every client uses the prebuilt ethpandaops image for that branch (build_args
-# baseimage/tag). Image tags follow the branches ethpandaops builds, bogota-devnet-N
-# is a common EL branch there:
+# baseimage/tag). Image tags follow the branches ethpandaops builds:
 # https://github.com/ethpandaops/eth-client-docker-image-builder/blob/master/branches.yaml
 # bogota-git.yaml builds every client from source instead.
 

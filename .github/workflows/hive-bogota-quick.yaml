@@ -32,15 +32,15 @@ on:
         description: GitHub repository and tag for hive (repo@tag)
       client_file:
         type: choice
-        default: bogota-git.yaml
+        default: bogota.yaml
         description: >-
           Client file under .github/configs/hive/ defining how each client
-          is built. The default builds every client from source from its
-          bogota-devnet-N branch; bogota.yaml uses the prebuilt
-          ethpandaops images for that branch instead.
+          is built. The default uses the prebuilt ethpandaops images of the
+          bogota-devnet-N branch; bogota-git.yaml builds every client from source
+          from that branch instead.
         options:
-          - bogota-git.yaml
           - bogota.yaml
+          - bogota-git.yaml
       client_config:
         type: string
         default: ""
@@ -117,7 +117,7 @@ jobs:
         id: client_config
         env:
           HIVE_VERSION: ${{ inputs.hive_version || 'ethereum/hive@master' }}
-          CLIENT_FILE: ${{ inputs.client_file || 'bogota-git.yaml' }}
+          CLIENT_FILE: ${{ inputs.client_file || 'bogota.yaml' }}
           CLIENT_CONFIG: ${{ inputs.client_config }}
           DEVNET: ${{ steps.fixtures.outputs.devnet }}
           EELS_IMAGE_TAG: ${{ steps.fixtures.outputs.image_tag }}
