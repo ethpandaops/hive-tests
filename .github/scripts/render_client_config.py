@@ -11,9 +11,9 @@ Render the hive client file a workflow passes to hive-github-action.
 Reads `.github/configs/hive/<file>` or, when the `CLIENT_CONFIG`
 environment variable is non-empty, that inline YAML instead (the
 `client_config` dispatch input). The inline YAML replaces the file's
-client entries. The file's simulator entries still apply unless the
-inline YAML has its own, so testing a client branch keeps the EELS
-image tag and build arguments of the run. Fills `${NAME}` placeholders from
+client entries. Each simulator entry of the file still applies unless
+the inline YAML has its own entry for that simulator, so testing a
+client branch keeps the EELS image tag and build arguments of the run. Fills `${NAME}` placeholders from
 `--var NAME=VALUE` first, so a devnet family can keep one client file
 whose branch or image tag follows the fixtures release (`--var
 DEVNET=bogota-devnet-1`), and fails on a placeholder left unfilled.
@@ -141,14 +141,15 @@ def main() -> None:
     if inline:
         source = "client_config input"
         entries = load(source, inline, variables)
-        # The inline config replaces the client entries. The file's
-        # simulator entries still apply unless it carries its own.
-        if not any("simulator" in entry for entry in entries):
-            entries += [
-                entry
-                for entry in load(path, read(path), variables)
-                if "simulator" in entry
-            ]
+        # The inline config replaces the client entries. Each simulator
+        # entry of the file still applies unless the inline config has
+        # its own entry for that simulator.
+        own = {entry["simulator"] for entry in entries if "simulator" in entry}
+        entries += [
+            entry
+            for entry in load(path, read(path), variables)
+            if "simulator" in entry and entry["simulator"] not in own
+        ]
     else:
         source = path
         entries = load(source, read(path), variables)

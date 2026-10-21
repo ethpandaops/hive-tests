@@ -83,14 +83,28 @@ class RenderClientConfigTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(yaml.safe_load(result.stdout), [{"client": "go-ethereum"}, SIMULATOR_ENTRY])
 
-    def test_inline_simulator_entries_replace_file_ones(self) -> None:
+    def test_inline_simulator_entry_keeps_other_file_entries(self) -> None:
         inline = "- client: go-ethereum\n- simulator: ethereum/eels/consume-rlp\n"
         result = self.render(inline, file=SIMULATOR_FILE)
 
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(
             yaml.safe_load(result.stdout),
-            [{"client": "go-ethereum"}, {"simulator": "ethereum/eels/consume-rlp"}],
+            [{"client": "go-ethereum"}, {"simulator": "ethereum/eels/consume-rlp"}, SIMULATOR_ENTRY],
+        )
+
+    def test_inline_simulator_entry_replaces_file_entry_of_same_simulator(self) -> None:
+        inline = (
+            "- client: go-ethereum\n"
+            "- simulator: ethereum/eels/consume-engine\n"
+            "  dockerfile: git\n"
+        )
+        result = self.render(inline, file=SIMULATOR_FILE)
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            yaml.safe_load(result.stdout),
+            [{"client": "go-ethereum"}, {"simulator": "ethereum/eels/consume-engine", "dockerfile": "git"}],
         )
 
 
