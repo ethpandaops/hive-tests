@@ -1,16 +1,22 @@
 name: Hive - Watch Images
 
-# Runs the dashboard workflows without a schedule (hive-*.yaml) when the
-# client or EELS simulator images they test change, see
-# .github/scripts/watch_images.py. An image build can start a check right
-# away instead of waiting for the next one, with a token allowed to run
-# workflows here:
+# Runs the dashboard workflows (hive-*.yaml) and the EELS wrappers
+# (sim-ethereum-eels-*.yaml) that have no schedule when the client or EELS
+# simulator images they test change, see .github/scripts/watch_images.py.
+# An image build can announce a new image so the check runs right away,
+# with a token that can write this repository's contents:
+#
+#   gh api repos/ethpandaops/hive-tests/dispatches -f event_type=image-pushed
+#
+# or, with a token that can only run its workflows:
 #
 #   gh workflow run watch-images.yaml -R ethpandaops/hive-tests
 on:
   schedule:
     - cron: '*/5 * * * *'
   workflow_dispatch:
+  repository_dispatch:
+    types: [image-pushed]
 
 env:
   INSTALL_RCLONE_VERSION: v1.68.2
@@ -49,4 +55,5 @@ jobs:
           fi
           uv run --script .github/scripts/watch_images.py \
             --previous previous.json --state state.json --dispatch | tee -a "$GITHUB_STEP_SUMMARY"
-          rclone copyto state.json "$STATE_DIR/$STATE_FILE"
+          # Uploaded even when unchanged, so the bucket's expiry never drops it.
+          rclone copyto --ignore-times state.json "$STATE_DIR/$STATE_FILE"
