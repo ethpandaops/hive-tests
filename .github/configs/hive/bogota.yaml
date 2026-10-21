@@ -1,4 +1,4 @@
-# Hive client file for the bogota workflows:
+# Hive client file for the bogota workflows, and their default:
 # every client from its prebuilt ethpandaops image.
 #
 # `${DEVNET}` is the devnet the fixtures release targets, bogota-devnet-N for
@@ -7,8 +7,7 @@
 # client branches as bogota-devnet-N in its upstream repository.
 #
 # Every client uses the prebuilt ethpandaops image for that branch (build_args
-# baseimage/tag). Image tags follow the branches ethpandaops builds, bogota-devnet-N
-# is a common EL branch there:
+# baseimage/tag). Image tags follow the branches ethpandaops builds:
 # https://github.com/ethpandaops/eth-client-docker-image-builder/blob/master/branches.yaml
 # bogota-git.yaml builds every client from source instead.
 
@@ -39,3 +38,26 @@
   build_args:
     baseimage: docker.ethquokkaops.io/dh/ethpandaops/reth
     tag: ${DEVNET}
+
+# EELS simulators (ethereum/eels/*) run the images ethereum/execution-specs
+# publishes. `tag` follows the fixtures_tag input: `bogota-devnet-N`, the
+# highest bogota-devnet release of devnet N with the framework at the head
+# of its devnets branch, or the pinned release's image, e.g.
+# bogota-devnet-v1.1.0. Simulators not listed here use their defaults.
+# To build one from source instead, give it `dockerfile: git` and the
+# execution-specs branch and fixtures release to use:
+#
+# - simulator: ethereum/eels/consume-engine
+#   dockerfile: git
+#   build_args:
+#     branch: devnets/bogota/1
+#     fixtures: tests-bogota-devnet@v1.1.0
+- simulator: ethereum/eels/consume-engine
+  build_args:
+    tag: ${EELS_IMAGE_TAG}
+- simulator: ethereum/eels/consume-enginex
+  build_args:
+    tag: ${EELS_IMAGE_TAG}
+- simulator: ethereum/eels/consume-rlp
+  build_args:
+    tag: ${EELS_IMAGE_TAG}

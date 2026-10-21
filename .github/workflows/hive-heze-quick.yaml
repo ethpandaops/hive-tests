@@ -8,12 +8,15 @@ on:
         type: string
         default: ""
         description: >-
-          Pin a fixtures release tag e.g. tests-heze-devnet@v2.0.0.
-          Empty resolves the greatest published tests-heze-devnet tag.
+          Pin a fixtures release tag e.g. tests-heze-devnet@v2.0.1 to
+          run that release's EELS simulator image. Empty follows the
+          heze-devnet-N image of the greatest published
+          tests-heze-devnet tag. The client branches
+          (heze-devnet-N) follow the tag's major version.
       client:
         type: string
-        default: '"besu","nethermind","ethrex","nimbus-el","reth"'
-        description: Comma-separated list of clients to test .e.g besu, nethermind, ethrex, nimbus-el, reth
+        default: '"besu","erigon","ethrex","go-ethereum","nethermind","nimbus-el","reth"'
+        description: Comma-separated list of clients to test .e.g besu, erigon, ethrex, go-ethereum, nethermind, nimbus-el, reth
       simulator:
         type: string
         default: >-
@@ -29,22 +32,24 @@ on:
         description: GitHub repository and tag for hive (repo@tag)
       client_file:
         type: choice
-        default: heze-devnet-2.yaml
+        default: heze.yaml
         description: >-
           Client file under .github/configs/hive/ defining how each client
-          is built. The default is the best available source per client
-          (prebuilt ethpandaops images where they exist); the -git file
-          builds every client from source.
+          is built. The default uses the prebuilt ethpandaops images of the
+          heze-devnet-N branch; heze-git.yaml builds every client from source
+          from that branch instead.
         options:
-          - heze-devnet-2.yaml
-          - heze-devnet-2-git.yaml
+          - heze.yaml
+          - heze-git.yaml
       client_config:
         type: string
         default: ""
         description: >-
-          Inline hive client file (YAML) that replaces client_file, for
-          example to test a branch or an image that is not in the
-          repository configuration.
+          Inline hive client file (YAML) that replaces the client
+          entries of client_file, for example to test a branch or an
+          image that is not in the repository configuration. Each EELS
+          simulator entry of client_file still applies unless it has an
+          entry for that simulator.
       workflow_artifact_upload:
         type: boolean
         default: true
@@ -66,24 +71,18 @@ env:
   # Flags used for the ethereum/eels/consume-engine simulator
   EELS_ENGINE_FLAGS: >-
     --sim.parallelism=6
-    --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
-    --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
     --sim.limit='.*7805.*'
     --sim.limit.exact=false
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-enginex simulator
   EELS_ENGINEX_FLAGS: >-
     --sim.parallelism=4
-    --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
-    --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
     --sim.limit='.*7805.*'
     --sim.limit.exact=false
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-rlp simulator
   EELS_RLP_FLAGS: >-
     --sim.parallelism=6
-    --sim.buildarg fixtures=${EELS_BUILD_ARG_FIXTURES}
-    --sim.buildarg branch=${EELS_BUILD_ARG_BRANCH}
     --sim.limit='.*7805.*'
     --sim.limit.exact=false
     --sim.loglevel=3
@@ -103,16 +102,31 @@ jobs:
           version: "0.12.3"
           enable-cache: true
           cache-dependency-glob: ".github/scripts/*.py"
+      # The EELS simulator image tag goes into the client file's simulator
+      # entries, so it is resolved before the file is rendered.
+      - name: Resolve fixtures release
+        id: fixtures
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FIXTURES_TAG: ${{ inputs.fixtures_tag }}
+        run: |
+          python3 .github/scripts/resolve_fixtures_release.py \
+            --prefix tests-heze-devnet \
+            --devnet-name 'heze-devnet-{major}'
       - name: Render client config
         id: client_config
         env:
           HIVE_VERSION: ${{ inputs.hive_version || 'ethereum/hive@master' }}
-          CLIENT_FILE: ${{ inputs.client_file || 'heze-devnet-2.yaml' }}
+          CLIENT_FILE: ${{ inputs.client_file || 'heze.yaml' }}
           CLIENT_CONFIG: ${{ inputs.client_config }}
+          DEVNET: ${{ steps.fixtures.outputs.devnet }}
+          EELS_IMAGE_TAG: ${{ steps.fixtures.outputs.image_tag }}
         run: |
           echo "hive_repo=${HIVE_VERSION%@*}" >> "$GITHUB_OUTPUT"
           echo "hive_tag=${HIVE_VERSION#*@}" >> "$GITHUB_OUTPUT"
-          uv run --script .github/scripts/render_client_config.py --file "$CLIENT_FILE"
+          uv run --script .github/scripts/render_client_config.py \
+            --file "$CLIENT_FILE" --var "DEVNET=$DEVNET" \
+            --var "EELS_IMAGE_TAG=$EELS_IMAGE_TAG"
 
   test:
     timeout-minutes: 2160
@@ -121,7 +135,6 @@ jobs:
       # BAL-specific environment variables
       HIVE_PARALLEL_TX_PROCESSING_DISABLED: "true"
       HIVE_AMSTERDAM_TIMESTAMP: "1777456800"
-      EELS_BUILD_ARG_BRANCH: "devnets/heze/2"
     runs-on: >-
       ${{
         contains(matrix.simulator, 'ethereum/eels/') && 'self-hosted-ghr-size-xl-do-x64' ||
@@ -136,8 +149,10 @@ jobs:
         client: >-
           ${{ fromJSON(format('[{0}]', inputs.client || '
             "besu",
-            "nethermind",
+            "erigon",
             "ethrex",
+            "go-ethereum",
+            "nethermind",
             "nimbus-el",
             "reth"
           '))}}
@@ -149,14 +164,6 @@ jobs:
           '))}}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Resolve fixtures release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          FIXTURES_TAG: ${{ inputs.fixtures_tag }}
-        run: |
-          python3 .github/scripts/resolve_fixtures_release.py \
-            --prefix tests-heze-devnet \
-            --asset fixtures_heze-devnet.tar.gz
       - uses: ethpandaops/hive-github-action/helpers/self-hosted-runner-dependencies@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
         if: runner.environment != 'github-hosted'
       - uses: ethpandaops/actions/docker-login@a91b7a8dd6a264f5e845ac2aa52d2d6f24e6d01d
