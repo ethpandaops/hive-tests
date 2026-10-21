@@ -95,6 +95,8 @@ jobs:
       hive_tag: ${{ steps.client_config.outputs.hive_tag }}
       # Hive client file (YAML) rendered from .github/configs/hive/
       client_config: ${{ steps.client_config.outputs.client_config }}
+      # Clients that have an image or branch for this run (JSON list)
+      clients: ${{ steps.clients.outputs.clients }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
@@ -127,10 +129,19 @@ jobs:
           uv run --script .github/scripts/render_client_config.py \
             --file "$CLIENT_FILE" --var "DEVNET=$DEVNET" \
             --var "EELS_IMAGE_TAG=$EELS_IMAGE_TAG"
+      # Clients without an image or branch for this run skip here instead of
+      # failing their jobs.
+      - name: Select the clients to run
+        id: clients
+        env:
+          CLIENTS: ${{ inputs.client || '"besu","erigon","ethrex","go-ethereum","nethermind","nimbus-el","reth"' }}
+          CLIENT_CONFIG: ${{ steps.client_config.outputs.client_config }}
+        run: uv run --script .github/scripts/select_clients.py
 
   test:
     timeout-minutes: 4320
     needs: prepare
+    if: needs.prepare.outputs.clients != '[]'
     env:
       # BAL-specific environment variables
       HIVE_PARALLEL_TX_PROCESSING_DISABLED: "true"
@@ -146,16 +157,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        client: >-
-          ${{ fromJSON(format('[{0}]', inputs.client || '
-            "besu",
-            "erigon",
-            "ethrex",
-            "go-ethereum",
-            "nethermind",
-            "nimbus-el",
-            "reth"
-          '))}}
+        client: ${{ fromJSON(needs.prepare.outputs.clients) }}
         simulator: >-
           ${{ fromJSON(format('[{0}]', inputs.simulator || '
             "ethereum/eels/consume-engine",
