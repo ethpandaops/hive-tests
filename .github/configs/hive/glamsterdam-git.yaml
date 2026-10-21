@@ -61,9 +61,10 @@
     tag: main
 
 # EELS simulators (ethereum/eels/*) run the images ethereum/execution-specs
-# publishes. `latest` is the highest tests@ release with the framework at
-# the head of the default branch; pin a release, e.g. v21.0.1, to keep the
-# tests fixed. Simulators not listed here use their defaults.
+# publishes. `tag` follows the fixtures_tag input: `latest`, the highest
+# tests@ release with the framework at the head of the default branch, or
+# the pinned release's image, e.g. v21.0.1. Simulators not listed here use
+# their defaults.
 # To build one from source instead, give it `dockerfile: git` and the
 # execution-specs branch and fixtures release to use:
 #
@@ -74,14 +75,14 @@
 #     fixtures: tests@v21.0.1
 - simulator: ethereum/eels/consume-engine
   build_args:
-    tag: latest
+    tag: ${EELS_IMAGE_TAG}
 - simulator: ethereum/eels/consume-enginex
   build_args:
-    tag: latest
+    tag: ${EELS_IMAGE_TAG}
 - simulator: ethereum/eels/consume-rlp
   build_args:
-    tag: latest
+    tag: ${EELS_IMAGE_TAG}
 - simulator: ethereum/eels/execute-blobs
   build_args:
-    tag: latest
+    tag: ${EELS_IMAGE_TAG}
     fork: Amsterdam

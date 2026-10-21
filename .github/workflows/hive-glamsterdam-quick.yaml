@@ -4,6 +4,12 @@ on:
     - cron: "45 12 * * *"
   workflow_dispatch:
     inputs:
+      fixtures_tag:
+        type: string
+        default: ""
+        description: >-
+          Pin a fixtures release tag e.g. tests@v21.0.1 to run that
+          release's EELS simulator image. Empty follows `latest`.
       client:
         type: string
         default: '"go-ethereum","nethermind","nimbus-el","erigon","besu","reth","ethrex"'
@@ -86,6 +92,15 @@ jobs:
           version: "0.12.3"
           enable-cache: true
           cache-dependency-glob: ".github/scripts/*.py"
+      # The EELS simulator image tag goes into the client file's simulator
+      # entries, so it is resolved before the file is rendered.
+      - name: Resolve fixtures release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FIXTURES_TAG: ${{ inputs.fixtures_tag }}
+        run: |
+          python3 .github/scripts/resolve_fixtures_release.py \
+            --prefix tests
       - name: Render client config
         id: client_config
         env:
@@ -95,7 +110,8 @@ jobs:
         run: |
           echo "hive_repo=${HIVE_VERSION%@*}" >> "$GITHUB_OUTPUT"
           echo "hive_tag=${HIVE_VERSION#*@}" >> "$GITHUB_OUTPUT"
-          uv run --script .github/scripts/render_client_config.py --file "$CLIENT_FILE"
+          uv run --script .github/scripts/render_client_config.py --file "$CLIENT_FILE" \
+            --var "EELS_IMAGE_TAG=$EELS_IMAGE_TAG"
 
   test:
     timeout-minutes: 2160
