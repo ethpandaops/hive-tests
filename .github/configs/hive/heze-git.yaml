@@ -20,12 +20,28 @@
     github: besu-eth/besu
     tag: ${DEVNET}
 
+# erigon
+- client: erigon
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: erigontech/erigon
+    tag: ${DEVNET}
+
 # ethrex
 - client: ethrex
   nametag: default
   dockerfile: git
   build_args:
     github: lambdaclass/ethrex
+    tag: ${DEVNET}
+
+# go-ethereum
+- client: go-ethereum
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: ethereum/go-ethereum
     tag: ${DEVNET}
 
 # nethermind

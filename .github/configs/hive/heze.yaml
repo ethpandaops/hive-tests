@@ -18,11 +18,25 @@
     baseimage: docker.ethquokkaops.io/dh/ethpandaops/besu
     tag: ${DEVNET}
 
+# erigon
+- client: erigon
+  nametag: default
+  build_args:
+    baseimage: docker.ethquokkaops.io/dh/ethpandaops/erigon
+    tag: ${DEVNET}
+
 # ethrex
 - client: ethrex
   nametag: default
   build_args:
     baseimage: docker.ethquokkaops.io/dh/ethpandaops/ethrex
+    tag: ${DEVNET}
+
+# go-ethereum
+- client: go-ethereum
+  nametag: default
+  build_args:
+    baseimage: docker.ethquokkaops.io/dh/ethpandaops/geth
     tag: ${DEVNET}
 
 # nethermind

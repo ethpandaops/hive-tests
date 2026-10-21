@@ -15,8 +15,8 @@ on:
           (heze-devnet-N) follow the tag's major version.
       client:
         type: string
-        default: '"besu","nethermind","ethrex","nimbus-el","reth"'
-        description: Comma-separated list of clients to test .e.g besu, nethermind, ethrex, nimbus-el, reth
+        default: '"besu","erigon","ethrex","go-ethereum","nethermind","nimbus-el","reth"'
+        description: Comma-separated list of clients to test .e.g besu, erigon, ethrex, go-ethereum, nethermind, nimbus-el, reth
       simulator:
         type: string
         default: >-
@@ -149,8 +149,10 @@ jobs:
         client: >-
           ${{ fromJSON(format('[{0}]', inputs.client || '
             "besu",
-            "nethermind",
+            "erigon",
             "ethrex",
+            "go-ethereum",
+            "nethermind",
             "nimbus-el",
             "reth"
           '))}}
