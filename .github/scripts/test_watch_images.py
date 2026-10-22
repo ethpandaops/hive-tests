@@ -86,6 +86,12 @@ class WorkflowTests(unittest.TestCase):
             with self.subTest(workflow=path.name):
                 self.assertNotEqual(path.name in watched, scheduled)
 
+    def test_fast_simulators_are_watched(self) -> None:
+        simulators = {s for settings in watch_images.watched().values() for s in settings["simulators"]}
+        for simulator in watch_images.FAST_SIMULATORS:
+            with self.subTest(simulator=simulator):
+                self.assertIn(simulator, simulators)
+
     def test_watches_every_dashboard_without_a_schedule(self) -> None:
         watched = watch_images.watched()
         for path in sorted(watch_images.WORKFLOWS.glob("hive-*.yaml")):
@@ -148,6 +154,16 @@ class PlanTests(unittest.TestCase):
     def test_client_rebuild_runs_right_away_on_a_quick_dashboard(self) -> None:
         now = images(client_besu="besu:1@new", client_geth="geth:1@b", simulator_engine="engine:1@c", simulator_rlp="rlp:1@d")
         self.assertEqual(plan(now, 1, config=QUICK), [(["besu"], ["engine", "rlp"])])
+
+    def test_client_rebuild_runs_fast_simulators_right_away(self) -> None:
+        enginex = "ethereum/eels/consume-enginex"
+        config = {**DASHBOARD, "simulators": ["engine", enginex]}
+        sims = {"simulator:engine": "engine:1@c", f"simulator:{enginex}": "enginex:1@d"}
+        then = {"hive-x.yaml": {"client:besu": "besu:1@a", "client:geth": "geth:1@b", **sims}}
+        now = {"hive-x.yaml": {"client:besu": "besu:1@new", "client:geth": "geth:1@b", **sims}}
+        previous = first_check(then, config)
+        self.assertEqual(plan(now, 1, config=config, previous=previous), [(["besu"], [enginex])])
+        self.assertEqual(plan(now, 12, config=config, previous=previous), [(["besu"], ["engine", enginex])])
 
     def test_waiting_rebuild_stays_due(self) -> None:
         now = images(client_besu="besu:1@new", client_geth="geth:1@b", simulator_engine="engine:1@c", simulator_rlp="rlp:1@d")

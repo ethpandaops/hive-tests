@@ -20,8 +20,8 @@ simulator pair last ran, and with which images. A pair runs when:
   brings, or a new fixtures release in an EELS image runs right away.
   A rebuild of the same client tag, as every push to a client's main
   branch brings, runs right away on a quick dashboard (`*-quick.yaml`)
-  and at most every FULL_RUN_INTERVAL on the others, whose runs take
-  hours per client
+  and for FAST_SIMULATORS, and at most every FULL_RUN_INTERVAL for the
+  other simulators, whose runs take up to a day and a half per client
 - it hasn't run for REFRESH_INTERVAL. This also picks up changes the
   images don't show, in hive, the workflows or EELS rebuilds of the
   same release, and reruns failures
@@ -61,6 +61,9 @@ EELS_RELEASE_LABELS = ("org.ethereum.eest.fixtures-release", "org.ethereum.eest.
 # longest any pair goes without a run.
 FULL_RUN_INTERVAL = timedelta(hours=12)
 REFRESH_INTERVAL = timedelta(hours=24)
+# Simulators that take an hour or two per client, so every client rebuild
+# reruns them.
+FAST_SIMULATORS = ("ethereum/eels/consume-enginex", "ethereum/eels/execute-blobs")
 
 
 def split_list(value: str) -> list:
@@ -224,7 +227,12 @@ def rebuilt(before: list, refs: list) -> bool:
     return before[1] == refs[1] and before[0].partition("@")[0] == refs[0].partition("@")[0]
 
 
-def due(last: dict | None, refs: list, quick: bool, now: datetime) -> bool:
+def throttled(config: dict, simulator: str) -> bool:
+    """Return whether client rebuilds rerun a simulator at most every FULL_RUN_INTERVAL."""
+    return not config["quick"] and simulator not in FAST_SIMULATORS
+
+
+def due(last: dict | None, refs: list, throttle: bool, now: datetime) -> bool:
     """Return whether a pair runs on this check, see the module docstring."""
     if last is None:
         return True
@@ -233,7 +241,7 @@ def due(last: dict | None, refs: list, quick: bool, now: datetime) -> bool:
         return True
     if last["with"] == refs:
         return False
-    return quick or not rebuilt(last["with"], refs) or since >= FULL_RUN_INTERVAL
+    return not throttle or not rebuilt(last["with"], refs) or since >= FULL_RUN_INTERVAL
 
 
 def plan(images_now: dict, previous: dict, workflows: dict, now: datetime) -> list:
@@ -243,7 +251,11 @@ def plan(images_now: dict, previous: dict, workflows: dict, now: datetime) -> li
         if name not in previous:
             continue
         pairs = pair_images(config, images_now[name])
-        due_now = {key for key, refs in pairs.items() if due(previous[name].get(key), refs, config["quick"], now)}
+        due_now = {
+            key
+            for key, refs in pairs.items()
+            if due(previous[name].get(key), refs, throttled(config, key.split("|")[1]), now)
+        }
         # Clients due for the same simulators share a run, so a run starts
         # only pairs that are due.
         groups = {}
