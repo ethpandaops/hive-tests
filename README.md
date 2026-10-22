@@ -69,7 +69,7 @@ You can manually trigger test runs through the GitHub Actions interface with cus
 
 ## Test Results
 
-There's a index workflow that runs periodically and generates a index of the test results and uploads it to the S3 bucket. See the [`generate-index.yaml`](.github/workflows/generate-index.yaml) workflow for more details.
+The [`generate-index.yaml`](.github/workflows/generate-index.yaml) workflow updates the index of the test results in the S3 bucket, fetching only the result files the index doesn't list yet. Each test job triggers it once its results are uploaded, and it also runs every 3 hours. A manual dispatch with `full` rebuilds the index from every result file.
 
 Test results are automatically uploaded to:
 
