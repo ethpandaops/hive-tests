@@ -87,6 +87,14 @@ class WorkflowTests(unittest.TestCase):
             with self.subTest(workflow=path.name):
                 self.assertNotEqual(path.name in watched, scheduled)
 
+    def test_only_master_dispatches_and_keeps_the_state(self) -> None:
+        workflow = yaml.safe_load((watch_images.WORKFLOWS / "watch-images.yaml").read_text())
+        (step,) = [s for s in workflow["jobs"]["watch"]["steps"] if "watch_images.py" in s.get("run", "")]
+        self.assertEqual(step["env"]["DISPATCH"], "${{ github.ref == 'refs/heads/master' && '--dispatch' || '' }}")
+        self.assertIn("$DISPATCH", step["run"])
+        self.assertNotIn("--dispatch", step["run"])
+        self.assertIn('[ -n "$DISPATCH" ]', step["run"])
+
     def test_watched_workflows_refresh_at_different_hours(self) -> None:
         hours = watch_images.refresh_hours(watch_images.watched())
         self.assertEqual(len(set(hours.values())), len(hours))

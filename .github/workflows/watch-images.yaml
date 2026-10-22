@@ -52,6 +52,10 @@ jobs:
       - name: Dispatch the runs of changed images
         env:
           GH_TOKEN: ${{ github.token }}
+          # Only master dispatches and keeps the state. A run on another
+          # branch, such as one testing a change to the watcher, only shows
+          # what it would run.
+          DISPATCH: ${{ github.ref == 'refs/heads/master' && '--dispatch' || '' }}
         run: |
           # A missing state starts over, recording the images without
           # dispatching. Any other failure to read it stops the check.
@@ -64,10 +68,10 @@ jobs:
           set -o pipefail
           status=0
           uv run --script .github/scripts/watch_images.py \
-            --previous previous.json --state state.json --dispatch | tee -a "$GITHUB_STEP_SUMMARY" || status=$?
+            --previous previous.json --state state.json $DISPATCH | tee -a "$GITHUB_STEP_SUMMARY" || status=$?
           # Uploaded even when unchanged, so the bucket's expiry never drops
           # it, and after a failed dispatch, so the runs that started are kept.
-          if [ -f state.json ]; then
+          if [ -f state.json ] && [ -n "$DISPATCH" ]; then
             rclone copyto --ignore-times state.json "$STATE_DIR/$STATE_FILE"
           fi
           exit "$status"
