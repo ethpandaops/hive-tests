@@ -12,21 +12,24 @@ Watches every `hive-*.yaml` dashboard workflow without a schedule, and
 every `sim-ethereum-eels-*.yaml` wrapper without one, which runs an EELS
 simulator through `generic.yaml`. For each, it resolves the fixtures
 release and renders the default client file as the prepare job does, then reads the current digest of each
-default client's image and each default EELS simulator's image. Against
-the digests of the previous check (`--previous`):
+default client's image and the release of each default EELS simulator's
+image. The state (`--previous`, `--state`) records when each client and
+simulator pair last ran, and with which images. A pair runs when:
 
-- a new fixtures release in an EELS simulator image dispatches that
-  simulator for every client with a published image. Rebuilds of the
-  same release, which follow every framework change, dispatch nothing,
-  and the next run of each client picks them up
-- a changed client image dispatches that client for the simulators
-  whose image did not change, so no run is dispatched twice
+- its images changed since it last ran. A new tag, as a new devnet
+  brings, or a new fixtures release in an EELS image runs right away.
+  A rebuild of the same client tag, as every push to a client's main
+  branch brings, runs right away on a quick dashboard (`*-quick.yaml`)
+  and at most every FULL_RUN_INTERVAL on the others, whose runs take
+  hours per client
+- it hasn't run for REFRESH_INTERVAL. This also picks up changes the
+  images don't show, in hive, the workflows or EELS rebuilds of the
+  same release, and reruns failures
 
-A new devnet moves every image tag, so it dispatches every client and
-simulator. An image that is not published yet dispatches nothing, and
-its client runs once the image appears. A workflow missing from the
-previous check, as on the very first, is only recorded. Writes the
-digests to `--state`, and dispatches only with `--dispatch`.
+Clients due for the same simulators share one run, so no pair runs
+twice. A pair with an image that is not published yet runs once the
+image appears. A workflow missing from the previous state, as on the
+very first check, is only recorded. Dispatches only with `--dispatch`.
 """
 
 import argparse
@@ -35,6 +38,7 @@ import os
 import re
 import sys
 import urllib.request
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import yaml
@@ -53,6 +57,10 @@ EELS = "ethereum/eels/"
 EELS_IMAGE = "ghcr.io/ethereum/execution-specs/hive/{name}"
 # Labels the EELS images record their fixtures or tests release in.
 EELS_RELEASE_LABELS = ("org.ethereum.eest.fixtures-release", "org.ethereum.eest.tests-release")
+# How often a full dashboard reruns a pair for client rebuilds, and the
+# longest any pair goes without a run.
+FULL_RUN_INTERVAL = timedelta(hours=12)
+REFRESH_INTERVAL = timedelta(hours=24)
 
 
 def split_list(value: str) -> list:
@@ -85,6 +93,7 @@ def settings(name: str, workflow: dict) -> dict:
         "simulators": split_list(inputs["simulator"]["default"]),
         "client_file": inputs["client_file"]["default"],
         "inputs": {},
+        "quick": name.endswith("-quick.yaml"),
         **release_settings(workflow),
     }
 
@@ -111,6 +120,7 @@ def wrapper_settings(wrapper: dict, generic: dict) -> dict | None:
         "client_file": inputs["client_file"]["default"],
         "inputs": {key: fields[key] for key in ("concurrency_group", "timeout_minutes") if key in fields},
         "json_lists": True,
+        "quick": False,
         **release_settings(generic),
     }
 
@@ -194,29 +204,76 @@ def current(workflows: dict) -> dict:
     return state
 
 
-def plan(state: dict, previous: dict, workflows: dict) -> list:
-    """Return the dispatches, as (workflow, inputs), for the changed images."""
-    dispatches = []
-    for name, images_now in state.items():
+def pair_images(config: dict, images_now: dict) -> dict:
+    """Return the client and simulator images of each pair a workflow can run.
+
+    Leaves out pairs with an unpublished image, which would only fail to
+    start.
+    """
+    result = {}
+    for client in config["clients"]:
+        for simulator in config["simulators"]:
+            refs = [images_now.get(f"client:{client}", ""), images_now.get(f"simulator:{simulator}", "")]
+            if not any(ref.endswith("@") for ref in refs):
+                result[f"{client}|{simulator}"] = refs
+    return result
+
+
+def rebuilt(before: list, refs: list) -> bool:
+    """Return whether only the client image changed, rebuilt under the same tag."""
+    return before[1] == refs[1] and before[0].partition("@")[0] == refs[0].partition("@")[0]
+
+
+def due(last: dict | None, refs: list, quick: bool, now: datetime) -> bool:
+    """Return whether a pair runs on this check, see the module docstring."""
+    if last is None:
+        return True
+    since = now - datetime.fromisoformat(last["ran"])
+    if since >= REFRESH_INTERVAL:
+        return True
+    if last["with"] == refs:
+        return False
+    return quick or not rebuilt(last["with"], refs) or since >= FULL_RUN_INTERVAL
+
+
+def plan(images_now: dict, previous: dict, workflows: dict, now: datetime) -> list:
+    """Return the runs due, as (watched workflow, clients, simulators)."""
+    runs = []
+    for name, config in workflows.items():
         if name not in previous:
             continue
-        changed = {
-            key
-            for key, value in images_now.items()
-            if value != previous[name].get(key) and not value.endswith("@")
-        }
-        simulators = [s for s in workflows[name]["simulators"] if f"simulator:{s}" in changed]
-        clients = [c for c in workflows[name]["clients"] if f"client:{c}" in changed]
-        unchanged = [s for s in workflows[name]["simulators"] if s not in simulators]
-        # Clients without a published image would only fail to start.
-        runnable = [
-            c for c in workflows[name]["clients"] if not images_now.get(f"client:{c}", "").endswith("@")
-        ]
-        if simulators and runnable:
-            dispatches.append(run(workflows[name], runnable, simulators))
-        if clients and unchanged:
-            dispatches.append(run(workflows[name], clients, unchanged))
-    return dispatches
+        pairs = pair_images(config, images_now[name])
+        due_now = {key for key, refs in pairs.items() if due(previous[name].get(key), refs, config["quick"], now)}
+        # Clients due for the same simulators share a run, so a run starts
+        # only pairs that are due.
+        groups = {}
+        for client in config["clients"]:
+            simulators = tuple(s for s in config["simulators"] if f"{client}|{s}" in due_now)
+            if simulators:
+                groups.setdefault(simulators, []).append(client)
+        runs += [(name, clients, list(simulators)) for simulators, clients in groups.items()]
+    return runs
+
+
+def record(images_now: dict, previous: dict, workflows: dict, ran: set, now: datetime) -> dict:
+    """Return the state after this check.
+
+    A pair that ran, or that a workflow missing from `previous` can run,
+    is recorded as run now with its current images. Every other pair
+    keeps its previous record, so a change that has to wait stays due.
+    """
+    stamp = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+    state = {}
+    for name, config in workflows.items():
+        pairs = pair_images(config, images_now[name])
+        before = previous.get(name, {})
+        state[name] = {}
+        for key in (f"{c}|{s}" for c in config["clients"] for s in config["simulators"]):
+            if key in pairs and (name not in previous or (name, key) in ran):
+                state[name][key] = {"ran": stamp, "with": pairs[key]}
+            elif key in before:
+                state[name][key] = before[key]
+    return state
 
 
 def run(config: dict, clients: list, simulators: list) -> tuple:
@@ -244,25 +301,39 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("--previous", required=True, help="digests of the previous check")
-    parser.add_argument("--state", required=True, help="file to write the current digests to")
+    parser.add_argument("--previous", required=True, help="state of the previous check")
+    parser.add_argument("--state", required=True, help="file to write the new state to")
     parser.add_argument("--dispatch", action="store_true", help="dispatch the runs")
+    parser.add_argument("--now", type=datetime.fromisoformat, help="time of the check (default: now)")
     args = parser.parse_args()
 
+    now = (args.now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     previous = json.loads(Path(args.previous).read_text() or "{}")
     workflows = watched()
-    state = current(workflows)
-    dispatches = plan(state, previous, workflows)
-    for name in state:
+    images_now = current(workflows)
+    runs = plan(images_now, previous, workflows, now)
+    for name in workflows:
         if name not in previous:
             print(f"{name}: recorded")
-    for workflow, inputs in dispatches:
-        print(f"{workflow}: {inputs}")
+    ran, failed = set(), False
+    for name, clients, simulators in runs:
+        workflow, inputs = run(workflows[name], clients, simulators)
+        print(f"{name}: {workflow} {inputs}")
         if args.dispatch:
-            dispatch(workflow, inputs)
-    if not dispatches:
-        print("no image changed")
+            try:
+                dispatch(workflow, inputs)
+            except OSError as err:
+                # The pairs stay due, so the next check retries them.
+                print(f"  dispatch failed: {err}")
+                failed = True
+                continue
+        ran |= {(name, f"{c}|{s}") for c in clients for s in simulators}
+    if not runs:
+        print("nothing to run")
+    state = record(images_now, previous, workflows, ran, now)
     Path(args.state).write_text(json.dumps(state, indent=2, sort_keys=True) + "\n")
+    if failed:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

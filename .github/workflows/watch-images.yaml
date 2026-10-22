@@ -2,7 +2,9 @@ name: Hive - Watch Images
 
 # Runs the dashboard workflows (hive-*.yaml) and the EELS wrappers
 # (sim-ethereum-eels-*.yaml) that have no schedule when the client or EELS
-# simulator images they test change, see .github/scripts/watch_images.py.
+# simulator images they test change, client rebuilds at most every 12 hours
+# outside the quick dashboards, and every client and simulator at least
+# daily, see .github/scripts/watch_images.py.
 # An image build can announce a new image so the check runs right away,
 # with a token that can write this repository's contents:
 #
@@ -54,7 +56,13 @@ jobs:
           else
             echo '{}' > previous.json
           fi
+          set -o pipefail
+          status=0
           uv run --script .github/scripts/watch_images.py \
-            --previous previous.json --state state.json --dispatch | tee -a "$GITHUB_STEP_SUMMARY"
-          # Uploaded even when unchanged, so the bucket's expiry never drops it.
-          rclone copyto --ignore-times state.json "$STATE_DIR/$STATE_FILE"
+            --previous previous.json --state state.json --dispatch | tee -a "$GITHUB_STEP_SUMMARY" || status=$?
+          # Uploaded even when unchanged, so the bucket's expiry never drops
+          # it, and after a failed dispatch, so the runs that started are kept.
+          if [ -f state.json ]; then
+            rclone copyto --ignore-times state.json "$STATE_DIR/$STATE_FILE"
+          fi
+          exit "$status"
