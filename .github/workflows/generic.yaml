@@ -131,7 +131,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
-          version: "0.12.3"
+          version: "0.13.4"
           enable-cache: true
           cache-dependency-glob: ".github/scripts/*.py"
       # The EELS simulator image tag goes into the client file's simulator
