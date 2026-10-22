@@ -75,8 +75,13 @@ jobs:
         FULL: ${{ inputs.full }}
         LIMIT: '3000'
       run: |
-        if [ "$FULL" = "true" ] || ! rclone cat "$RESULTS/listing.jsonl" > listing.jsonl; then
+        # A missing listing starts empty. Any other read error fails the
+        # update, and the next one retries, rather than rebuilding the index.
+        listed=$(rclone lsf --files-only --include listing.jsonl "$RESULTS/")
+        if [ "$FULL" = "true" ] || [ -z "$listed" ]; then
           : > listing.jsonl
+        else
+          rclone cat "$RESULTS/listing.jsonl" > listing.jsonl
         fi
         rclone lsf --files-only --include "*.json" "$RESULTS/results" > names.txt
         python3 .github/scripts/update_listing.py missing \
