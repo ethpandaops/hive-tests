@@ -59,6 +59,12 @@ env:
   S3_PATH: glamsterdam
   S3_PUBLIC_URL: https://hive.ethpandaops.io/#/test/glamsterdam/
   INSTALL_RCLONE_VERSION: v1.68.2
+  # rclone reads its flags from RCLONE_* variables, so these reach the
+  # action's upload. consume-engine and consume-rlp write one client log per
+  # test (32k files on Bogota), which rclone's default 4 transfers upload in
+  # about 40 minutes.
+  RCLONE_TRANSFERS: "64"
+  RCLONE_CHECKERS: "64"
   # Flags used for all simulators
   GLOBAL_EXTRA_FLAGS: >-
     --client.checktimelimit=300s
