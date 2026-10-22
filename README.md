@@ -4,7 +4,7 @@ This repository contains automated testing workflows for Ethereum execution clie
 
 ## Overview
 
-Hive Tests runs comprehensive compatibility and conformance tests across multiple Ethereum execution clients to ensure they properly implement the Ethereum protocol. The tests are executed automatically on a daily schedule and can also be triggered manually.
+Hive Tests runs comprehensive compatibility and conformance tests across multiple Ethereum execution clients to ensure they properly implement the Ethereum protocol. The tests run automatically, on a daily schedule or when the images they test change, and can also be triggered manually.
 
 ## Supported Clients
 
@@ -57,6 +57,10 @@ The repository includes additional specialized workflows that target specific co
 
 
 These workflows are lightweight dispatchers that trigger the main [`generic.yaml`](.github/workflows/generic.yaml) workflow with specific parameters for targeted testing scenarios. They use different concurrency groups to avoid conflicts and can be manually triggered through the GitHub Actions interface.
+
+### Dashboard Runs
+
+The bogota, heze and glamsterdam workflows ([`hive-bogota.yaml`](.github/workflows/hive-bogota.yaml), [`hive-heze.yaml`](.github/workflows/hive-heze.yaml), [`hive-glamsterdam.yaml`](.github/workflows/hive-glamsterdam.yaml) and their `-quick` versions) have no schedule. [`watch-images.yaml`](.github/workflows/watch-images.yaml) checks the client and EELS simulator images they test and dispatches a run when one changes: a new client image runs that client, a new fixtures release in an EELS image runs that simulator for every client with an image, and a new devnet runs everything. A rebuild of the same client tag (a push to its main branch) reruns that client right away on the `-quick` workflows and for the fast `consume-enginex` and `execute-blobs` simulators, and at most every 12 hours for `consume-engine` and `consume-rlp`, whose full runs take up to a day and a half per client. Every pair also runs daily at its workflow's refresh hour, unless it ran in the 12 hours before, which picks up hive and workflow changes and reruns failures. The refresh hours are spread over the day, one per workflow. Every `hive-*.yaml` workflow without a schedule is watched this way, and so is every `sim-ethereum-eels-*.yaml` wrapper without one, whose EELS simulator then runs through [`generic.yaml`](.github/workflows/generic.yaml) for the clients that changed. It runs when an image build announces a new image, and hourly to catch a missed announcement. An image build announces one with `gh api repos/ethpandaops/hive-tests/dispatches -f event_type=image-pushed` (a token that can write this repository's contents) or `gh workflow run watch-images.yaml -R ethpandaops/hive-tests` (a token that can only run its workflows).
 
 ### Manual Execution
 
