@@ -14,8 +14,10 @@ published, or whose branch or tag exists for a `dockerfile: git` build,
 so a client with no image or branch for a devnet yet is skipped up front
 instead of failing its jobs. A client without an entry, with a commit as
 its git tag, or with an image in a registry that can't be checked is
-kept. Writes the kept clients to the `clients` step output as a JSON
-list, and lists the skipped ones in the step summary.
+kept, and so is one whose lookup fails, as on a rate limit, so a lookup
+never stops the run. Writes the kept clients to the `clients` step
+output as a JSON list, and lists the skipped and unchecked ones in the
+step summary.
 """
 
 import json
@@ -49,46 +51,64 @@ def source(entry: dict) -> tuple | None:
     return None
 
 
+class CheckFailed(Exception):
+    """A lookup that failed, so it can't tell whether an image or branch exists."""
+
+
 def image_exists(image: str) -> bool:
-    return images.digest(image) is not None
+    try:
+        return images.digest(image) is not None
+    except Exception as err:
+        raise CheckFailed(f"looking up {image} failed: {err!r}") from err
 
 
 def branch_exists(repository: str, ref: str) -> bool:
     """Return whether a GitHub repository has a branch or tag named ref."""
-    result = subprocess.run(
-        ["git", "ls-remote", "--exit-code", f"https://github.com/{repository}", f"refs/heads/{ref}", f"refs/tags/{ref}"],
-        capture_output=True,
-        text=True,
-        timeout=60,
-    )
+    try:
+        result = subprocess.run(
+            ["git", "ls-remote", "--exit-code", f"https://github.com/{repository}", f"refs/heads/{ref}", f"refs/tags/{ref}"],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+    except subprocess.TimeoutExpired as err:
+        raise CheckFailed(f"git ls-remote {repository} timed out") from err
     if result.returncode not in (0, 2):
-        sys.exit(f"git ls-remote {repository} failed: {result.stderr.strip()}")
+        raise CheckFailed(f"git ls-remote {repository} failed: {result.stderr.strip()}")
     return result.returncode == 0
 
 
 def select(clients: list, entries: list, image_exists, branch_exists) -> tuple:
-    """Return the clients that can start and those to skip, with the reason."""
-    kept, skipped = [], []
+    """Return the clients that can start, those to skip and those kept unchecked.
+
+    The skipped and unchecked clients come with the reason.
+    """
+    kept, skipped, unchecked = [], [], []
     for name in clients:
         entry = next((e for e in entries if e.get("client") == name), None)
         built_from = source(entry) if entry else None
-        if built_from is None:
+        try:
+            if built_from is None:
+                kept.append(name)
+            elif built_from[0] == "image" and not image_exists(built_from[1]):
+                skipped.append((name, f"image {built_from[1]} is not published"))
+            elif built_from[0] == "branch" and not branch_exists(built_from[1], built_from[2]):
+                skipped.append((name, f"{built_from[1]} has no branch or tag {built_from[2]}"))
+            else:
+                kept.append(name)
+        except CheckFailed as err:
             kept.append(name)
-        elif built_from[0] == "image" and not image_exists(built_from[1]):
-            skipped.append((name, f"image {built_from[1]} is not published"))
-        elif built_from[0] == "branch" and not branch_exists(built_from[1], built_from[2]):
-            skipped.append((name, f"{built_from[1]} has no branch or tag {built_from[2]}"))
-        else:
-            kept.append(name)
-    return kept, skipped
+            unchecked.append((name, str(err)))
+    return kept, skipped, unchecked
 
 
 def main() -> None:
     clients = split_list(os.environ["CLIENTS"])
     entries = yaml.safe_load(os.environ["CLIENT_CONFIG"]) or []
-    kept, skipped = select(clients, entries, image_exists, branch_exists)
+    kept, skipped, unchecked = select(clients, entries, image_exists, branch_exists)
     lines = [f"Running: {', '.join(kept) or 'none'}"]
     lines += [f"Skipped {name}: {reason}" for name, reason in skipped]
+    lines += [f"Kept {name} without checking it: {reason}" for name, reason in unchecked]
     print("\n".join(lines))
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:

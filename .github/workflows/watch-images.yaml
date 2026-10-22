@@ -47,6 +47,8 @@ jobs:
       - name: Dispatch the runs of changed images
         env:
           GH_TOKEN: ${{ github.token }}
+          DOCKERHUB_USERNAME: ethpandaops
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
         run: |
           # A missing state starts over, recording the images without
           # dispatching. Any other failure to read it stops the check.
