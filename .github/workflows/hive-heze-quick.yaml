@@ -134,8 +134,6 @@ jobs:
         env:
           CLIENTS: ${{ inputs.client || '"besu","erigon","ethrex","go-ethereum","nethermind","nimbus-el","reth"' }}
           CLIENT_CONFIG: ${{ steps.client_config.outputs.client_config }}
-          DOCKERHUB_USERNAME: ethpandaops
-          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
         run: uv run --script .github/scripts/select_clients.py
 
   test:

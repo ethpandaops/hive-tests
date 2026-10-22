@@ -81,8 +81,6 @@ class SelectTests(unittest.TestCase):
 
 class LookupTests(unittest.TestCase):
     def setUp(self) -> None:
-        images.docker_hub_headers.cache_clear()
-        self.addCleanup(images.docker_hub_headers.cache_clear)
         sleep = mock.patch.object(images.time, "sleep")
         sleep.start()
         self.addCleanup(sleep.stop)
@@ -130,21 +128,6 @@ class LookupTests(unittest.TestCase):
         self.assertEqual(head.full_url, "https://docker.ethquokkaops.io/v2/dh/ethpandaops/besu/manifests/main")
         self.assertEqual(head.get_header("Authorization"), "Bearer t")
 
-    def test_docker_hub_lookups_fall_back_to_anonymous(self) -> None:
-        with mock.patch.dict(images.os.environ, {}, clear=True):
-            self.assertEqual(images.docker_hub_headers(), {})
-        images.docker_hub_headers.cache_clear()
-        credentials = {"DOCKERHUB_USERNAME": "ethpandaops", "DOCKERHUB_TOKEN": "token"}
-        with mock.patch.dict(images.os.environ, credentials), mock.patch.object(
-            images.urllib.request, "urlopen", side_effect=http_error(401)
-        ), mock.patch.object(images.sys, "stderr", io.StringIO()):
-            self.assertEqual(images.docker_hub_headers(), {})
-        images.docker_hub_headers.cache_clear()
-        with mock.patch.dict(images.os.environ, credentials), mock.patch.object(
-            images.urllib.request, "urlopen", return_value=io.BytesIO(b'{"access_token": "abc"}')
-        ):
-            self.assertEqual(images.docker_hub_headers(), {"Authorization": "Bearer abc"})
-
 
 class WorkflowTests(unittest.TestCase):
     """Every dashboard workflow runs only the clients its prepare job selected."""
@@ -160,7 +143,8 @@ class WorkflowTests(unittest.TestCase):
                 self.assertEqual(prepare["outputs"]["clients"], "${{ steps.clients.outputs.clients }}")
                 self.assertEqual(test["if"], "needs.prepare.outputs.clients != '[]'")
                 self.assertEqual(test["strategy"]["matrix"]["client"], "${{ fromJSON(needs.prepare.outputs.clients) }}")
-                self.assertEqual(step["env"]["DOCKERHUB_TOKEN"], "${{ secrets.DOCKERHUB_TOKEN }}")
+                # Lookups are anonymous, so the step gets no Docker Hub credentials.
+                self.assertFalse([key for key in step["env"] if key.startswith("DOCKERHUB_")])
                 # The fallback for scheduled runs lists the same clients as the input default.
                 fallback = re.search(r"inputs\.client \|\| '([^']+)'", step["env"]["CLIENTS"]).group(1)
                 default = workflow[True]["workflow_dispatch"]["inputs"]["client"]["default"]

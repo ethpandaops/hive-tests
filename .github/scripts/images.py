@@ -3,16 +3,11 @@ Look up the container images that hive client files and simulators use.
 
 Reads ghcr and the Harbor mirror of Docker Hub that hive pulls the
 client images from through their registry API, and Docker Hub itself
-through its tag API. A manifest or tag lookup doesn't count as a Docker
-Hub pull. Docker Hub lookups authenticate with DOCKERHUB_USERNAME and
-DOCKERHUB_TOKEN when both are set, for a higher rate limit than
-anonymous ones.
+through its tag API. Lookups are anonymous, and a manifest or tag
+lookup doesn't count as a Docker Hub pull.
 """
 
-import functools
 import json
-import os
-import sys
 import time
 import urllib.error
 import urllib.request
@@ -70,30 +65,6 @@ def fetch(request: urllib.request.Request):
         time.sleep(5 * attempt)
 
 
-@functools.cache
-def docker_hub_headers() -> dict:
-    """Return the headers that authenticate a Docker Hub API lookup.
-
-    Empty without credentials, or if logging in fails, so lookups fall
-    back to anonymous ones.
-    """
-    username, token = os.environ.get("DOCKERHUB_USERNAME"), os.environ.get("DOCKERHUB_TOKEN")
-    if not (username and token):
-        return {}
-    request = urllib.request.Request(
-        "https://hub.docker.com/v2/auth/token",
-        method="POST",
-        data=json.dumps({"identifier": username, "secret": token}).encode(),
-        headers={"Content-Type": "application/json"},
-    )
-    try:
-        access_token = json.load(urllib.request.urlopen(request, timeout=30))["access_token"]
-    except (OSError, ValueError, KeyError) as err:
-        print(f"Docker Hub login failed, looking up images anonymously: {err!r}", file=sys.stderr)
-        return {}
-    return {"Authorization": f"Bearer {access_token}"}
-
-
 def pull_token(host: str, repository: str) -> str:
     """Return an anonymous pull token for a repository in a registry of TOKEN_URLS."""
     url = TOKEN_URLS[host].format(repository=repository)
@@ -122,7 +93,7 @@ def digest(image: str) -> str | None:
     host, repository = source
     if host == "docker.io":
         url = f"https://hub.docker.com/v2/repositories/{repository}/tags/{tag}"
-        response = fetch(urllib.request.Request(url, headers=docker_hub_headers()))
+        response = fetch(urllib.request.Request(url))
         return json.load(response)["digest"] if response else None
     response = registry_api(host, repository, f"manifests/{tag}", pull_token(host, repository), method="HEAD")
     return response.headers["Docker-Content-Digest"] if response else None
