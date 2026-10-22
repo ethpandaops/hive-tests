@@ -30,6 +30,10 @@ env:
 jobs:
   watch:
     runs-on: ubuntu-latest
+    # Dispatching the runs needs actions: write.
+    permissions:
+      actions: write
+      contents: read
     concurrency:
       group: watch-images
       cancel-in-progress: false
@@ -37,7 +41,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
-          version: "0.12.3"
+          version: "0.13.4"
           enable-cache: true
           cache-dependency-glob: ".github/scripts/*.py"
       - uses: AnimMouse/setup-rclone@0d99fa3878a334d3e307c1a8372ad55550fdaea7 # v1.11.0
