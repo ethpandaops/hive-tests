@@ -174,18 +174,18 @@ def simulator_version(image: str) -> str | None:
     """
     reference, tag = image.rsplit(":", 1)
     source = images.registry(reference)
-    if source is None or source[0] != "ghcr":
+    if source is None or source[0] not in images.TOKEN_URLS:
         return images.digest(image)
-    repository = source[1]
-    token = images.ghcr_token(repository)
-    response = images.ghcr(repository, f"manifests/{tag}", token)
+    host, repository = source
+    token = images.pull_token(host, repository)
+    response = images.registry_api(host, repository, f"manifests/{tag}", token)
     if response is None:
         return None
     manifest = json.load(response)
     if "manifests" in manifest:
         platforms = [m for m in manifest["manifests"] if m.get("platform", {}).get("architecture") == "amd64"]
-        manifest = json.load(images.ghcr(repository, f"manifests/{(platforms or manifest['manifests'])[0]['digest']}", token))
-    config = json.load(images.ghcr(repository, f"blobs/{manifest['config']['digest']}", token))
+        manifest = json.load(images.registry_api(host, repository, f"manifests/{(platforms or manifest['manifests'])[0]['digest']}", token))
+    config = json.load(images.registry_api(host, repository, f"blobs/{manifest['config']['digest']}", token))
     return eels_release(config) or images.digest(image)
 
 

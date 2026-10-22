@@ -43,9 +43,10 @@ class SourceTests(unittest.TestCase):
                 self.assertIsNone(select_clients.source(entry))
 
     def test_maps_images_to_registries(self) -> None:
-        self.assertEqual(images.registry(f"{HUB}/besu"), ("docker-hub", "ethpandaops/besu"))
-        self.assertEqual(images.registry("ghcr.io/a/b"), ("ghcr", "a/b"))
-        self.assertEqual(images.registry("ubuntu"), ("docker-hub", "library/ubuntu"))
+        self.assertEqual(images.registry(f"{HUB}/besu"), ("docker.ethquokkaops.io", "dh/ethpandaops/besu"))
+        self.assertEqual(images.registry("ghcr.io/a/b"), ("ghcr.io", "a/b"))
+        self.assertEqual(images.registry("ethpandaops/besu"), ("docker.io", "ethpandaops/besu"))
+        self.assertEqual(images.registry("ubuntu"), ("docker.io", "library/ubuntu"))
         self.assertIsNone(images.registry("quay.io/x/y"))
 
 
@@ -117,6 +118,17 @@ class LookupTests(unittest.TestCase):
             with self.assertRaises(urllib.error.HTTPError):
                 images.fetch(request)
             self.assertEqual(urlopen.call_count, images.ATTEMPTS)
+
+    def test_reads_mirrored_images_from_the_mirror(self) -> None:
+        manifest = mock.Mock(headers={"Docker-Content-Digest": "sha256:abc"})
+        with mock.patch.object(images, "fetch", side_effect=[io.BytesIO(b'{"token": "t"}'), manifest]) as fetch:
+            self.assertEqual(images.digest(f"{HUB}/besu:main"), "sha256:abc")
+        token, head = (call.args[0] for call in fetch.call_args_list)
+        self.assertTrue(token.full_url.startswith("https://docker.ethquokkaops.io/service/token?"))
+        self.assertIn("repository:dh/ethpandaops/besu:pull", token.full_url)
+        self.assertEqual(head.get_method(), "HEAD")
+        self.assertEqual(head.full_url, "https://docker.ethquokkaops.io/v2/dh/ethpandaops/besu/manifests/main")
+        self.assertEqual(head.get_header("Authorization"), "Bearer t")
 
     def test_docker_hub_lookups_fall_back_to_anonymous(self) -> None:
         with mock.patch.dict(images.os.environ, {}, clear=True):
