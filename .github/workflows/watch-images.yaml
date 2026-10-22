@@ -4,7 +4,8 @@ name: Hive - Watch Images
 # (sim-ethereum-eels-*.yaml) that have no schedule when the client or EELS
 # simulator images they test change, client rebuilds of the slow simulators
 # at most every 12 hours outside the quick dashboards, and every client and
-# simulator at least daily, see .github/scripts/watch_images.py.
+# simulator daily at its workflow's refresh hour, see
+# .github/scripts/watch_images.py.
 # An image build can announce a new image so the check runs right away,
 # with a token that can write this repository's contents:
 #

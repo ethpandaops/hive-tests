@@ -22,9 +22,12 @@ simulator pair last ran, and with which images. A pair runs when:
   branch brings, runs right away on a quick dashboard (`*-quick.yaml`)
   and for FAST_SIMULATORS, and at most every FULL_RUN_INTERVAL for the
   other simulators, whose runs take up to a day and a half per client
-- it hasn't run for REFRESH_INTERVAL. This also picks up changes the
-  images don't show, in hive, the workflows or EELS rebuilds of the
-  same release, and reruns failures
+- its workflow's daily refresh hour passed, unless it ran in the
+  RECENT_RUN before. The workflows' refresh hours are spread over the
+  day, so their refreshes don't start in the same check, and a pair runs
+  at least every day and a half. This also picks up changes the images
+  don't show, in hive, the workflows or EELS rebuilds of the same
+  release, and reruns failures
 
 Clients due for the same simulators share one run, so no pair runs
 twice. A pair with an image that is not published yet runs once the
@@ -57,10 +60,11 @@ EELS = "ethereum/eels/"
 EELS_IMAGE = "ghcr.io/ethereum/execution-specs/hive/{name}"
 # Labels the EELS images record their fixtures or tests release in.
 EELS_RELEASE_LABELS = ("org.ethereum.eest.fixtures-release", "org.ethereum.eest.tests-release")
-# How often a full dashboard reruns a pair for client rebuilds, and the
-# longest any pair goes without a run.
+# How often a full dashboard reruns a pair for client rebuilds.
 FULL_RUN_INTERVAL = timedelta(hours=12)
-REFRESH_INTERVAL = timedelta(hours=24)
+# A pair that ran less than this before its workflow's daily refresh hour,
+# or since, skips the refresh.
+RECENT_RUN = timedelta(hours=12)
 # Simulators that take an hour or two per client, so every client rebuild
 # reruns them.
 FAST_SIMULATORS = ("ethereum/eels/consume-enginex", "ethereum/eels/execute-blobs")
@@ -232,29 +236,52 @@ def throttled(config: dict, simulator: str) -> bool:
     return not config["quick"] and simulator not in FAST_SIMULATORS
 
 
-def due(last: dict | None, refs: list, throttle: bool, now: datetime) -> bool:
-    """Return whether a pair runs on this check, see the module docstring."""
+def refresh_hours(workflows: dict) -> dict:
+    """Return the hour of the day, in UTC, each watched workflow refreshes at.
+
+    Spread evenly over the day in name order.
+    """
+    return {name: index * 24 // len(workflows) for index, name in enumerate(sorted(workflows))}
+
+
+def last_refresh(hour: int, now: datetime) -> datetime:
+    """Return the latest time at or before now that is `hour` o'clock.
+
+    A check that missed it, as when GitHub drops a scheduled run, still
+    sees it.
+    """
+    refresh = now.replace(hour=hour, minute=0, second=0, microsecond=0)
+    return refresh if refresh <= now else refresh - timedelta(days=1)
+
+
+def due(last: dict | None, refs: list, throttle: bool, refresh: datetime, now: datetime) -> bool:
+    """Return whether a pair runs on this check, see the module docstring.
+
+    `refresh` is its workflow's last refresh, see `last_refresh`.
+    """
     if last is None:
         return True
-    since = now - datetime.fromisoformat(last["ran"])
-    if since >= REFRESH_INTERVAL:
+    ran = datetime.fromisoformat(last["ran"])
+    if ran <= refresh - RECENT_RUN:
         return True
     if last["with"] == refs:
         return False
-    return not throttle or not rebuilt(last["with"], refs) or since >= FULL_RUN_INTERVAL
+    return not throttle or not rebuilt(last["with"], refs) or now - ran >= FULL_RUN_INTERVAL
 
 
 def plan(images_now: dict, previous: dict, workflows: dict, now: datetime) -> list:
     """Return the runs due, as (watched workflow, clients, simulators)."""
     runs = []
+    hours = refresh_hours(workflows)
     for name, config in workflows.items():
         if name not in previous:
             continue
         pairs = pair_images(config, images_now[name])
+        refresh = last_refresh(hours[name], now)
         due_now = {
             key
             for key, refs in pairs.items()
-            if due(previous[name].get(key), refs, throttled(config, key.split("|")[1]), now)
+            if due(previous[name].get(key), refs, throttled(config, key.split("|")[1]), refresh, now)
         }
         # Clients due for the same simulators share a run, so a run starts
         # only pairs that are due.

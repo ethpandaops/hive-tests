@@ -21,7 +21,8 @@ DASHBOARD = {
 QUICK = {**DASHBOARD, "quick": True}
 HUB = "docker.ethquokkaops.io/dh/ethpandaops"
 GHCR = "ghcr.io/ethereum/execution-specs/hive"
-START = datetime(2026, 10, 22, 12, tzinfo=timezone.utc)
+# Midnight, the refresh hour of a lone watched workflow.
+START = datetime(2026, 10, 22, tzinfo=timezone.utc)
 
 
 def images(**refs: str) -> dict:
@@ -86,6 +87,11 @@ class WorkflowTests(unittest.TestCase):
             with self.subTest(workflow=path.name):
                 self.assertNotEqual(path.name in watched, scheduled)
 
+    def test_watched_workflows_refresh_at_different_hours(self) -> None:
+        hours = watch_images.refresh_hours(watch_images.watched())
+        self.assertEqual(len(set(hours.values())), len(hours))
+        self.assertTrue(all(0 <= hour < 24 for hour in hours.values()))
+
     def test_fast_simulators_are_watched(self) -> None:
         simulators = {s for settings in watch_images.watched().values() for s in settings["simulators"]}
         for simulator in watch_images.FAST_SIMULATORS:
@@ -144,7 +150,7 @@ class PlanTests(unittest.TestCase):
         self.assertEqual(watch_images.plan(BEFORE, {}, workflows, START), [])
         state = first_check()["hive-x.yaml"]
         self.assertEqual(sorted(state), ["besu|engine", "besu|rlp", "geth|engine", "geth|rlp"])
-        self.assertEqual(state["besu|rlp"], {"ran": "2026-10-22T12:00:00Z", "with": ["besu:1@a", "rlp:1@d"]})
+        self.assertEqual(state["besu|rlp"], {"ran": "2026-10-22T00:00:00Z", "with": ["besu:1@a", "rlp:1@d"]})
 
     def test_client_rebuild_waits_on_a_full_dashboard(self) -> None:
         now = images(client_besu="besu:1@new", client_geth="geth:1@b", simulator_engine="engine:1@c", simulator_rlp="rlp:1@d")
@@ -191,6 +197,30 @@ class PlanTests(unittest.TestCase):
         self.assertEqual(plan(BEFORE, 23), [])
         self.assertEqual(plan(BEFORE, 24), [EVERY_PAIR])
         self.assertEqual(plan(BEFORE, 24, config=QUICK), [EVERY_PAIR])
+        # A check that misses the refresh hour runs the refresh at the next one.
+        self.assertEqual(plan(BEFORE, 30), [EVERY_PAIR])
+
+    def test_refresh_skips_pairs_that_ran_less_than_12_hours_before(self) -> None:
+        workflows = {"hive-x.yaml": DASHBOARD}
+        besu = {("hive-x.yaml", "besu|engine"), ("hive-x.yaml", "besu|rlp")}
+        for hours, runs in ((12, [EVERY_PAIR]), (13, [(["geth"], ["engine", "rlp"])])):
+            with self.subTest(besu_ran=hours):
+                state = watch_images.record(BEFORE, first_check(), workflows, besu, START + timedelta(hours=hours))
+                self.assertEqual(plan(BEFORE, 24, previous=state), runs)
+                self.assertEqual(plan(BEFORE, 48, previous=state), [EVERY_PAIR])
+
+    def test_workflows_refresh_at_different_hours(self) -> None:
+        workflows = {"hive-a.yaml": DASHBOARD, "hive-b.yaml": DASHBOARD}
+        now = {name: BEFORE["hive-x.yaml"] for name in workflows}
+        state = watch_images.record(now, {}, workflows, set(), START)
+        refreshed = []
+        for hours in range(1, 49):
+            check = START + timedelta(hours=hours)
+            runs = watch_images.plan(now, state, workflows, check)
+            refreshed += [(hours, name) for name, _, _ in runs]
+            ran = {(name, f"{c}|{s}") for name, clients, simulators in runs for c in clients for s in simulators}
+            state = watch_images.record(now, state, workflows, ran, check)
+        self.assertEqual(refreshed, [(12, "hive-b.yaml"), (24, "hive-a.yaml"), (36, "hive-b.yaml"), (48, "hive-a.yaml")])
 
     def test_unpublished_image_runs_nothing(self) -> None:
         now = images(client_besu="besu:2@", client_geth="geth:1@b", simulator_engine="engine:1@c", simulator_rlp="rlp:1@d")
@@ -211,7 +241,7 @@ class PlanTests(unittest.TestCase):
         ran = {("hive-x.yaml", "besu|engine")}
         state = watch_images.record(now, first_check(), {"hive-x.yaml": DASHBOARD}, ran, START + timedelta(hours=1))
         pairs = state["hive-x.yaml"]
-        self.assertEqual(pairs["besu|engine"], {"ran": "2026-10-22T13:00:00Z", "with": ["besu:2@e", "engine:1@c"]})
+        self.assertEqual(pairs["besu|engine"], {"ran": "2026-10-22T01:00:00Z", "with": ["besu:2@e", "engine:1@c"]})
         self.assertEqual(pairs["besu|rlp"], first_check()["hive-x.yaml"]["besu|rlp"])
 
     def test_generic_runs_take_json_lists_and_the_wrapper_inputs(self) -> None:
