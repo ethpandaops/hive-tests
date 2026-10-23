@@ -114,6 +114,9 @@ env:
   # Flags used for the ethereum/eels/consume-rlp simulator
   EELS_RLP_FLAGS: >-
     --sim.loglevel=3
+  # Flags used for the ethereum/eels/execute-blobs simulator
+  EELS_EXECUTE_FLAGS: >-
+    --sim.loglevel=3
   # Flags used for the ethereum/rpc-compat simulator
   RPC_COMPAT_FLAGS: >-
     --sim.loglevel=3
@@ -209,6 +212,7 @@ jobs:
             ${{ matrix.simulator == 'ethereum/eels/consume-engine' && env.EELS_ENGINE_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-enginex' && env.EELS_ENGINEX_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-rlp' && env.EELS_RLP_FLAGS || '' }}
+            ${{ matrix.simulator == 'ethereum/eels/execute-blobs' && env.EELS_EXECUTE_FLAGS || '' }}
             ${{ inputs.extra_flags }}
           s3_upload: true
           s3_bucket: ${{ env.S3_BUCKET }}

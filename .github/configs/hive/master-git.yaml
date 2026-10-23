@@ -82,3 +82,7 @@
 - simulator: ethereum/eels/consume-rlp
   build_args:
     tag: ${EELS_IMAGE_TAG}
+- simulator: ethereum/eels/execute-blobs
+  build_args:
+    tag: ${EELS_IMAGE_TAG}
+    fork: Amsterdam
