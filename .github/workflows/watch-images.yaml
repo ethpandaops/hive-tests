@@ -6,6 +6,10 @@ name: Hive - Watch Images
 # at most every 12 hours outside the quick dashboards, and every client and
 # simulator daily at its workflow's refresh hour, see
 # .github/scripts/watch_images.py.
+# On master, each run dispatches the next one CHECK_INTERVAL after it
+# started, since GitHub often runs scheduled workflows hours late. The
+# newest run's `next` job cancels any other that is still waiting, so one
+# loop runs however many announcements start a check in between.
 # An image build can announce a new image so the check runs right away,
 # with a token that can write this repository's contents:
 #
@@ -15,7 +19,7 @@ name: Hive - Watch Images
 #
 #   gh workflow run watch-images.yaml -R ethpandaops/hive-tests
 on:
-  # A safety net for missed image-pushed events, off the busy top of the hour.
+  # Restarts the loop if it stops, off the busy top of the hour.
   schedule:
     - cron: '23 * * * *'
   workflow_dispatch:
@@ -27,6 +31,8 @@ env:
   # The image digests and EELS releases of the previous check.
   STATE_DIR: s3:hive-results
   STATE_FILE: watch-images.json
+  # Time between the starts of two checks.
+  CHECK_INTERVAL: 600
 
 jobs:
   watch:
@@ -75,3 +81,36 @@ jobs:
             rclone copyto --ignore-times state.json "$STATE_DIR/$STATE_FILE"
           fi
           exit "$status"
+
+  next:
+    name: Dispatch the next check
+    needs: watch
+    # Also after a failed check, so an outage doesn't end the loop.
+    if: ${{ !cancelled() && github.ref == 'refs/heads/master' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: write
+    concurrency:
+      group: watch-images-next
+      cancel-in-progress: true
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Wait for the next interval
+        run: |
+          STARTED=$(gh api "repos/${GH_REPO}/actions/runs/${{ github.run_id }}" --jq .run_started_at)
+          ELAPSED=$(( $(date +%s) - $(date -d "$STARTED" +%s) ))
+          REMAINING=$(( CHECK_INTERVAL - ELAPSED ))
+          if [ "$REMAINING" -gt 0 ]; then
+            echo "Sleeping ${REMAINING}s"
+            sleep "$REMAINING"
+          fi
+      - name: Dispatch
+        run: |
+          for attempt in 1 2 3 4 5; do
+            gh workflow run watch-images.yaml --ref master && exit 0
+            sleep $((attempt * 15))
+          done
+          exit 1
