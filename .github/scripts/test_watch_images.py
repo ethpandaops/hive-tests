@@ -98,7 +98,7 @@ class WorkflowTests(unittest.TestCase):
     def test_checks_dispatch_the_next_one_on_master(self) -> None:
         workflow = yaml.safe_load((watch_images.WORKFLOWS / "watch-images.yaml").read_text())
         watch, following = workflow["jobs"]["watch"], workflow["jobs"]["next"]
-        self.assertEqual(workflow["env"]["CHECK_INTERVAL"], 600)
+        self.assertEqual(workflow["env"]["CHECK_INTERVAL"], 3600)
         self.assertEqual(following["needs"], "watch")
         self.assertEqual(following["if"], "${{ !cancelled() && github.ref == 'refs/heads/master' }}")
         self.assertGreater(following["timeout-minutes"] * 60, workflow["env"]["CHECK_INTERVAL"])

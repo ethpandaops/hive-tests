@@ -31,8 +31,9 @@ env:
   # The image digests and EELS releases of the previous check.
   STATE_DIR: s3:hive-results
   STATE_FILE: watch-images.json
-  # Time between the starts of two checks.
-  CHECK_INTERVAL: 600
+  # Time between the starts of two checks. Announcements start a check
+  # within seconds, so this loop only catches one that went missing.
+  CHECK_INTERVAL: 3600
 
 jobs:
   watch:
@@ -88,7 +89,7 @@ jobs:
     # Also after a failed check, so an outage doesn't end the loop.
     if: ${{ !cancelled() && github.ref == 'refs/heads/master' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 75
     permissions:
       actions: write
     concurrency:
