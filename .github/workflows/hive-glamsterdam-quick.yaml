@@ -1,4 +1,9 @@
 name: Hive - Glamsterdam Quick
+# The workflow name alone does not tell dispatched runs apart, so the run
+# title names the clients and simulators (and the fixtures tag when pinned).
+run-name: >-
+  Hive - Glamsterdam Quick: ${{ join(fromJSON(format('[{0}]', inputs.client)), ', ') || 'default clients' }} with
+  ${{ join(fromJSON(format('[{0}]', inputs.simulator)), ', ') || 'default simulators' }}${{ inputs.fixtures_tag && format(' ({0})', inputs.fixtures_tag) || '' }}
 on:
   workflow_dispatch:
     inputs:
@@ -185,6 +190,8 @@ jobs:
       - name: Update the results index
         if: ${{ !cancelled() && env.RUN_SUCCESS == 'true' }}
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          TRIGGER: "${{ github.workflow }}: ${{ matrix.client }} with ${{ matrix.simulator }}"
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -196,5 +203,6 @@ jobs:
               inputs: {
                 's3-bucket': process.env.S3_BUCKET,
                 's3-path': process.env.S3_PATH,
+                trigger: process.env.TRIGGER,
               },
             });
