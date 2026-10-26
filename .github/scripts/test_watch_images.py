@@ -64,11 +64,11 @@ class WorkflowTests(unittest.TestCase):
         quick = yaml.safe_load((watch_images.WORKFLOWS / "hive-heze-quick.yaml").read_text())
         self.assertTrue(watch_images.settings("hive-heze-quick.yaml", quick)["quick"])
 
-    def test_reads_what_an_eels_wrapper_runs_through_generic(self) -> None:
-        generic = yaml.safe_load((watch_images.WORKFLOWS / "generic.yaml").read_text())
+    def test_reads_what_an_eels_wrapper_runs_through_mainnet(self) -> None:
+        mainnet = yaml.safe_load((watch_images.WORKFLOWS / "mainnet.yaml").read_text())
         wrapper = yaml.safe_load((watch_images.WORKFLOWS / "sim-ethereum-eels-consume-rlp.yaml").read_text())
-        settings = watch_images.wrapper_settings(wrapper, generic)
-        self.assertEqual(settings["workflow"], "generic.yaml")
+        settings = watch_images.wrapper_settings(wrapper, mainnet)
+        self.assertEqual(settings["workflow"], "mainnet.yaml")
         self.assertEqual(settings["simulators"], ["ethereum/eels/consume-rlp"])
         self.assertEqual(settings["inputs"], {"concurrency_group": "eels-consume-rlp", "timeout_minutes": "2880"})
         self.assertEqual(settings["prefix"], "tests")
@@ -76,9 +76,9 @@ class WorkflowTests(unittest.TestCase):
         self.assertFalse(settings["quick"])
 
     def test_skips_wrappers_of_other_simulators(self) -> None:
-        generic = yaml.safe_load((watch_images.WORKFLOWS / "generic.yaml").read_text())
+        mainnet = yaml.safe_load((watch_images.WORKFLOWS / "mainnet.yaml").read_text())
         wrapper = yaml.safe_load((watch_images.WORKFLOWS / "sim-ethereum-engine.yaml").read_text())
-        self.assertIsNone(watch_images.wrapper_settings(wrapper, generic))
+        self.assertIsNone(watch_images.wrapper_settings(wrapper, mainnet))
 
     def test_watches_every_eels_wrapper_without_a_schedule(self) -> None:
         watched = watch_images.watched()
@@ -269,11 +269,11 @@ class PlanTests(unittest.TestCase):
         self.assertEqual(pairs["besu|engine"], {"ran": "2026-10-22T01:00:00Z", "with": ["besu:2@e", "engine:1@c"]})
         self.assertEqual(pairs["besu|rlp"], first_check()["hive-x.yaml"]["besu|rlp"])
 
-    def test_generic_runs_take_json_lists_and_the_wrapper_inputs(self) -> None:
-        config = {**DASHBOARD, "workflow": "generic.yaml", "json_lists": True, "inputs": {"concurrency_group": "eels-x"}}
+    def test_mainnet_runs_take_json_lists_and_the_wrapper_inputs(self) -> None:
+        config = {**DASHBOARD, "workflow": "mainnet.yaml", "json_lists": True, "inputs": {"concurrency_group": "eels-x"}}
         self.assertEqual(
             watch_images.run(config, ["besu"], ["engine", "rlp"]),
-            ("generic.yaml", {"concurrency_group": "eels-x", "client": '["besu"]', "simulator": '["engine", "rlp"]'}),
+            ("mainnet.yaml", {"concurrency_group": "eels-x", "client": '["besu"]', "simulator": '["engine", "rlp"]'}),
         )
         self.assertEqual(
             watch_images.run(DASHBOARD, ["besu", "geth"], ["rlp"]),
