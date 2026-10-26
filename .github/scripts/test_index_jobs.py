@@ -42,7 +42,7 @@ class IndexUpdateTests(unittest.TestCase):
         }
 
     def test_hive_workflows_are_found(self) -> None:
-        self.assertIn("generic.yaml", self.workflows)
+        self.assertIn("mainnet.yaml", self.workflows)
         self.assertIn("hive-heze-quick.yaml", self.workflows)
 
     def test_test_jobs_skip_the_index(self) -> None:

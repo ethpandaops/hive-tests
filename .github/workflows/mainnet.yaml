@@ -1,4 +1,4 @@
-name: Hive - Generic
+name: Hive - Mainnet
 on:
   workflow_dispatch:
     inputs:
@@ -90,8 +90,9 @@ env:
   GOPROXY: "${{ vars.GOPROXY }}"
   # Hive action environment variables
   S3_BUCKET: hive-results
+  # Results stay under their old path so the dashboard keeps its history
   S3_PATH: generic
-  S3_PUBLIC_URL: https://hive.ethpandaops.io/#/test/generic/
+  S3_PUBLIC_URL: https://hive.ethpandaops.io/#/test/mainnet/
   INSTALL_RCLONE_VERSION: v1.68.2
   # rclone reads its flags from RCLONE_* variables, so these reach the
   # action's upload. consume-engine and consume-rlp write one client log per

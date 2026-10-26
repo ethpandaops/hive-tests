@@ -10,7 +10,7 @@ Dispatch the hive dashboard workflows whose images changed.
 
 Watches every `hive-*.yaml` dashboard workflow without a schedule, and
 every `sim-ethereum-eels-*.yaml` wrapper without one, which runs an EELS
-simulator through `generic.yaml`. For each, it resolves the fixtures
+simulator through `mainnet.yaml`. For each, it resolves the fixtures
 release and renders the default client file as the prepare job does, then reads the current digest of each
 default client's image and the release of each default EELS simulator's
 image. The state (`--previous`, `--state`) records when each client and
@@ -105,8 +105,8 @@ def settings(name: str, workflow: dict) -> dict:
     }
 
 
-def wrapper_settings(wrapper: dict, generic: dict) -> dict | None:
-    """Return what an EELS wrapper runs through generic.yaml, or None.
+def wrapper_settings(wrapper: dict, mainnet: dict) -> dict | None:
+    """Return what an EELS wrapper runs through mainnet.yaml, or None.
 
     The wrapper's own dispatch inputs are kept, so a run it starts queues
     and times out as the wrapper's runs do.
@@ -114,21 +114,21 @@ def wrapper_settings(wrapper: dict, generic: dict) -> dict | None:
     scripts = [step["with"]["script"] for job in wrapper["jobs"].values() for step in job["steps"] if "script" in step.get("with", {})]
     script = scripts[0] if len(scripts) == 1 else ""
     fields = dict(re.findall(r"(workflow_id|simulator|concurrency_group|timeout_minutes): '([^']+)'", script))
-    if fields.get("workflow_id") != "generic.yaml" or "simulator" not in fields:
+    if fields.get("workflow_id") != "mainnet.yaml" or "simulator" not in fields:
         return None
     simulators = json.loads(fields["simulator"])
     if not all(s.startswith(EELS) for s in simulators):
         return None
-    inputs = generic[True]["workflow_dispatch"]["inputs"]
+    inputs = mainnet[True]["workflow_dispatch"]["inputs"]
     return {
-        "workflow": "generic.yaml",
+        "workflow": "mainnet.yaml",
         "clients": json.loads(inputs["client"]["default"]),
         "simulators": simulators,
         "client_file": inputs["client_file"]["default"],
         "inputs": {key: fields[key] for key in ("concurrency_group", "timeout_minutes") if key in fields},
         "json_lists": True,
         "quick": False,
-        **release_settings(generic),
+        **release_settings(mainnet),
     }
 
 
@@ -139,10 +139,10 @@ def watched() -> dict:
         workflow = yaml.safe_load(path.read_text())
         if "schedule" not in workflow[True]:
             result[path.name] = settings(path.name, workflow)
-    generic = yaml.safe_load((WORKFLOWS / "generic.yaml").read_text())
+    mainnet = yaml.safe_load((WORKFLOWS / "mainnet.yaml").read_text())
     for path in sorted(WORKFLOWS.glob("sim-ethereum-eels-*.yaml")):
         wrapper = yaml.safe_load(path.read_text())
-        if "schedule" not in wrapper[True] and (config := wrapper_settings(wrapper, generic)):
+        if "schedule" not in wrapper[True] and (config := wrapper_settings(wrapper, mainnet)):
             result[path.name] = config
     return result
 

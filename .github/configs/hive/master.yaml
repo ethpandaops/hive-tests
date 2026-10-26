@@ -1,4 +1,4 @@
-# Hive client file for the generic workflows:
+# Hive client file for the mainnet workflows:
 # the best available source per client.
 #
 # Clients with a prebuilt ethpandaops image for this set use it (build_args

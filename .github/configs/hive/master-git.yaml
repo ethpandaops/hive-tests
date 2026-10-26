@@ -1,4 +1,4 @@
-# Hive client file for the generic workflows:
+# Hive client file for the mainnet workflows:
 # every client built from source.
 #
 # Alternative to master.yaml, for tip-of-branch builds when an image is stale or
