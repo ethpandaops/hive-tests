@@ -95,6 +95,23 @@ class WorkflowTests(unittest.TestCase):
         self.assertNotIn("--dispatch", step["run"])
         self.assertIn('[ -n "$DISPATCH" ]', step["run"])
 
+    def test_checks_dispatch_the_next_one_on_master(self) -> None:
+        workflow = yaml.safe_load((watch_images.WORKFLOWS / "watch-images.yaml").read_text())
+        watch, following = workflow["jobs"]["watch"], workflow["jobs"]["next"]
+        self.assertEqual(workflow["env"]["CHECK_INTERVAL"], 3600)
+        self.assertEqual(following["needs"], "watch")
+        self.assertEqual(following["if"], "${{ !cancelled() && github.ref == 'refs/heads/master' }}")
+        self.assertGreater(following["timeout-minutes"] * 60, workflow["env"]["CHECK_INTERVAL"])
+        self.assertEqual(following["permissions"], {"actions": "write"})
+        # The newest run's wait replaces any older one, so one loop runs.
+        self.assertNotEqual(following["concurrency"]["group"], watch["concurrency"]["group"])
+        self.assertIs(following["concurrency"]["cancel-in-progress"], True)
+        steps = "\n".join(step["run"] for step in following["steps"])
+        self.assertIn("CHECK_INTERVAL - ELAPSED", steps)
+        self.assertIn("gh workflow run watch-images.yaml --ref master", steps)
+        # The cron stays, to restart the loop if it stops.
+        self.assertIn("schedule", workflow[True])
+
     def test_watched_workflows_refresh_at_different_hours(self) -> None:
         hours = watch_images.refresh_hours(watch_images.watched())
         self.assertEqual(len(set(hours.values())), len(hours))
