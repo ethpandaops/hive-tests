@@ -1,4 +1,9 @@
 name: Hive - Mainnet
+# The workflow name alone does not tell dispatched runs apart, so the run
+# title names the clients and simulators (and the fixtures tag when pinned).
+run-name: >-
+  Hive - Mainnet: ${{ join(fromJSON(inputs.client), ', ') }} with
+  ${{ join(fromJSON(inputs.simulator), ', ') }}${{ inputs.fixtures_tag && format(' ({0})', inputs.fixtures_tag) || '' }}
 on:
   workflow_dispatch:
     inputs:
