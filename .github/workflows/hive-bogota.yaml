@@ -143,7 +143,7 @@ jobs:
       - name: Select the clients to run
         id: clients
         env:
-          CLIENTS: ${{ inputs.client || '"besu","go-ethereum","nethermind","ethrex","reth"' }}
+          CLIENTS: ${{ inputs.client || '"besu","erigon","go-ethereum","nethermind","nimbus-el","ethrex","reth"' }}
           CLIENT_CONFIG: ${{ steps.client_config.outputs.client_config }}
         run: uv run --script .github/scripts/select_clients.py
 
