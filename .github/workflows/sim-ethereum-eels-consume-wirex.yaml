@@ -17,8 +17,9 @@ jobs:
               ref: 'master',
               inputs: {
                 simulator: '["ethereum/eels/consume-wirex"]',
-                // nimbus-el is left out until it supports consume-wirex
-                client: '["go-ethereum","reth","nethermind","besu","erigon","ethrex"]',
+                // nimbus-el is left out until it supports consume-wirex, and
+                // reth until its full run no longer hangs
+                client: '["go-ethereum","nethermind","besu","erigon","ethrex"]',
                 concurrency_group: 'eels-consume-wirex',
                 timeout_minutes: '1680'
               }

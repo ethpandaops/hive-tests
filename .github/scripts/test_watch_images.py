@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -80,7 +81,7 @@ class WorkflowTests(unittest.TestCase):
         wrapper = yaml.safe_load((watch_images.WORKFLOWS / "sim-ethereum-eels-consume-wirex.yaml").read_text())
         settings = watch_images.wrapper_settings(wrapper, mainnet)
         self.assertNotIn("nimbus-el", settings["clients"])
-        self.assertEqual(len(settings["clients"]), 6)
+        self.assertLess(set(settings["clients"]), set(json.loads(mainnet[True]["workflow_dispatch"]["inputs"]["client"]["default"])))
 
     def test_skips_wrappers_of_other_simulators(self) -> None:
         mainnet = yaml.safe_load((watch_images.WORKFLOWS / "mainnet.yaml").read_text())
