@@ -18,8 +18,8 @@ on:
           (bogota-devnet-N) follow the tag's major version.
       client:
         type: string
-        default: '"go-ethereum","nethermind","ethrex","reth"'
-        description: Comma-separated list of clients to test .e.g go-ethereum, nethermind, ethrex, reth
+        default: '"besu","go-ethereum","nethermind","ethrex","reth"'
+        description: Comma-separated list of clients to test .e.g besu, go-ethereum, nethermind, ethrex, reth
       simulator:
         type: string
         default: >-
@@ -143,7 +143,7 @@ jobs:
       - name: Select the clients to run
         id: clients
         env:
-          CLIENTS: ${{ inputs.client || '"go-ethereum","nethermind","ethrex","reth"' }}
+          CLIENTS: ${{ inputs.client || '"besu","go-ethereum","nethermind","ethrex","reth"' }}
           CLIENT_CONFIG: ${{ steps.client_config.outputs.client_config }}
         run: uv run --script .github/scripts/select_clients.py
 

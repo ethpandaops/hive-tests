@@ -12,6 +12,14 @@
 # the client_file input of a manual workflow dispatch. bogota.yaml, the
 # default, uses the prebuilt images.
 
+# besu
+- client: besu
+  nametag: default
+  dockerfile: git
+  build_args:
+    github: besu-eth/besu
+    tag: ${DEVNET}
+
 # ethrex
 - client: ethrex
   nametag: default
