@@ -28,6 +28,7 @@ The repository runs various test simulators including:
 - **[ethereum/eels/consume-engine](https://github.com/ethereum/hive/tree/master/simulators/ethereum/eels/consume-engine)**
 - **[ethereum/eels/consume-enginex](https://github.com/ethereum/hive/tree/master/simulators/ethereum/eels/consume-enginex)**
 - **[ethereum/eels/consume-rlp](https://github.com/ethereum/hive/tree/master/simulators/ethereum/eels/consume-rlp)**
+- **[ethereum/eels/consume-wirex](https://github.com/ethereum/hive/tree/master/simulators/ethereum/eels/consume-wirex)**
 - **[ethereum/eels/execute-blobs](https://github.com/ethereum/hive/tree/master/simulators/ethereum/eels/execute-blobs)**
 - **[ethereum/engine](https://github.com/ethereum/hive/tree/master/simulators/ethereum/engine)**
 - **[ethereum/graphql](https://github.com/ethereum/hive/tree/master/simulators/ethereum/graphql)**
@@ -51,6 +52,7 @@ The repository includes additional specialized workflows that target specific co
 - **[`sim-ethereum-eels-consume-engine.yaml`](.github/workflows/sim-ethereum-eels-consume-engine.yaml)**
 - **[`sim-ethereum-eels-consume-enginex.yaml`](.github/workflows/sim-ethereum-eels-consume-enginex.yaml)**
 - **[`sim-ethereum-eels-consume-rlp.yaml`](.github/workflows/sim-ethereum-eels-consume-rlp.yaml)**
+- **[`sim-ethereum-eels-consume-wirex.yaml`](.github/workflows/sim-ethereum-eels-consume-wirex.yaml)**
 - **[`sim-ethereum-eels-execute-blobs.yaml`](.github/workflows/sim-ethereum-eels-execute-blobs.yaml)**
 - **[`sim-ethereum-engine.yaml`](.github/workflows/sim-ethereum-engine.yaml)**
 - **[`sim-ethereum-graphql.yaml`](.github/workflows/sim-ethereum-graphql.yaml)**

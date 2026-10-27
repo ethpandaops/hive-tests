@@ -75,6 +75,13 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("besu", settings["clients"])
         self.assertFalse(settings["quick"])
 
+    def test_runs_only_the_clients_a_wrapper_names(self) -> None:
+        mainnet = yaml.safe_load((watch_images.WORKFLOWS / "mainnet.yaml").read_text())
+        wrapper = yaml.safe_load((watch_images.WORKFLOWS / "sim-ethereum-eels-consume-wirex.yaml").read_text())
+        settings = watch_images.wrapper_settings(wrapper, mainnet)
+        self.assertNotIn("nimbus-el", settings["clients"])
+        self.assertEqual(len(settings["clients"]), 6)
+
     def test_skips_wrappers_of_other_simulators(self) -> None:
         mainnet = yaml.safe_load((watch_images.WORKFLOWS / "mainnet.yaml").read_text())
         wrapper = yaml.safe_load((watch_images.WORKFLOWS / "sim-ethereum-engine.yaml").read_text())
