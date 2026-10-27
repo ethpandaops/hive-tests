@@ -112,17 +112,11 @@ env:
     --docker.auth
     --docker.buildoutput
   # Flags used for the ethereum/eels/consume-engine simulator
-  # (appended after GLOBAL_EXTRA_FLAGS; hive takes the last occurrence of a
-  # repeated flag, so --sim.parallelism here overrides the global value)
   EELS_ENGINE_FLAGS: >-
     --sim.loglevel=3
-    --sim.parallelism=8
   # Flags used for the ethereum/eels/consume-enginex simulator
-  # (--sim.parallelism overrides the global value, as above; EELS splits
-  # oversized pre-alloc groups so that 8 workers stay busy)
   EELS_ENGINEX_FLAGS: >-
     --sim.loglevel=3
-    --sim.parallelism=8
   # Flags used for the ethereum/eels/consume-wirex simulator
   EELS_WIREX_FLAGS: >-
     --sim.loglevel=3
