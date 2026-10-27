@@ -67,6 +67,7 @@ class IndexUpdateTests(unittest.TestCase):
                     self.assertEqual(step["if"], "${{ !cancelled() && env.RUN_SUCCESS == 'true' }}")
                     self.assertIn("'s3-path': process.env.S3_PATH", step["with"]["script"])
                     self.assertIn("'s3-bucket': process.env.S3_BUCKET", step["with"]["script"])
+                    self.assertIn("trigger: process.env.TRIGGER", step["with"]["script"])
                     self.assertIn("S3_PATH", workflow["env"])
                     self.assertIn("S3_BUCKET", workflow["env"])
 
@@ -74,7 +75,7 @@ class IndexUpdateTests(unittest.TestCase):
         workflow = yaml.safe_load((WORKFLOWS / "generate-index.yaml").read_text())
         # PyYAML reads the `on` key as True.
         inputs = workflow[True]["workflow_dispatch"]["inputs"]
-        self.assertEqual(set(inputs), {"s3-bucket", "s3-path", "full"})
+        self.assertEqual(set(inputs), {"s3-bucket", "s3-path", "full", "trigger"})
         concurrency = workflow["jobs"]["generate-index"]["concurrency"]
         self.assertIn("inputs.s3-path", concurrency["group"])
         # Queued rather than cancelled, so a running update always finishes.

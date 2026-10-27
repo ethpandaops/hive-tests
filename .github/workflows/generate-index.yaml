@@ -1,4 +1,8 @@
 name: Hive - Generate Results Index
+# Names the test job that dispatched the update, or the event that started it.
+run-name: >-
+  Hive - Generate Results Index (${{ inputs.s3-path || 'generic' }}):
+  ${{ inputs.trigger || (inputs.full && 'full rebuild') || github.event_name }}
 
 on:
   schedule:
@@ -20,6 +24,11 @@ on:
         required: false
         default: false
         type: boolean
+      trigger:
+        description: 'The test job that dispatched the update, shown in the run title'
+        required: false
+        default: ''
+        type: string
 
 env:
   INSTALL_RCLONE_VERSION: v1.68.2
