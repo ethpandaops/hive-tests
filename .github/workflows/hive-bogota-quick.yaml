@@ -18,8 +18,8 @@ on:
           (bogota-devnet-N) follow the tag's major version.
       client:
         type: string
-        default: '"besu","go-ethereum","nethermind","ethrex","reth"'
-        description: Comma-separated list of clients to test .e.g besu, go-ethereum, nethermind, ethrex, reth
+        default: '"besu","erigon","go-ethereum","nethermind","nimbus-el","ethrex","reth"'
+        description: Comma-separated list of clients to test .e.g besu, erigon, go-ethereum, nethermind, nimbus-el, ethrex, reth
       simulator:
         type: string
         default: >-
