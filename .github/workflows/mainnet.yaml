@@ -112,6 +112,9 @@ env:
   # Flags used for the ethereum/eels/consume-enginex simulator
   EELS_ENGINEX_FLAGS: >-
     --sim.loglevel=3
+  # Flags used for the ethereum/eels/consume-wirex simulator
+  EELS_WIREX_FLAGS: >-
+    --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-rlp simulator
   EELS_RLP_FLAGS: >-
     --sim.loglevel=3
@@ -226,6 +229,7 @@ jobs:
             ${{ matrix.simulator == 'ethereum/consensus' && env.CONSENSUS_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-engine' && env.EELS_ENGINE_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-enginex' && env.EELS_ENGINEX_FLAGS || '' }}
+            ${{ matrix.simulator == 'ethereum/eels/consume-wirex' && env.EELS_WIREX_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-rlp' && env.EELS_RLP_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/execute-blobs' && env.EELS_EXECUTE_FLAGS || '' }}
             ${{ inputs.extra_flags }}

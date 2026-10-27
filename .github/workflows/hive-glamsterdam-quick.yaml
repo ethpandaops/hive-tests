@@ -17,10 +17,11 @@ on:
         default: >-
           "ethereum/eels/consume-engine",
           "ethereum/eels/consume-enginex",
-          "ethereum/eels/consume-rlp"
+          "ethereum/eels/consume-rlp",
+          "ethereum/eels/consume-wirex"
         description: >-
           Comma-separated list of simulators to test
-          .e.g ethereum/eels/consume-engine, ethereum/eels/consume-enginex, ethereum/eels/consume-rlp
+          .e.g ethereum/eels/consume-engine, ethereum/eels/consume-enginex, ethereum/eels/consume-rlp, ethereum/eels/consume-wirex
       hive_version:
         type: string
         default: ethereum/hive@master
@@ -84,6 +85,12 @@ env:
   # Flags used for the ethereum/eels/consume-rlp simulator
   EELS_RLP_FLAGS: >-
     --sim.parallelism=6
+    --sim.limit='.*(2780|7708|7732|7778|7843|7928|7954|7975|7976|7981|7997|8024|8037|8038|8045|8061|8070|8159|8246|8282).*'
+    --sim.limit.exact=false
+    --sim.loglevel=3
+  # Flags used for the ethereum/eels/consume-wirex simulator
+  EELS_WIREX_FLAGS: >-
+    --sim.parallelism=4
     --sim.limit='.*(2780|7708|7732|7778|7843|7928|7954|7975|7976|7981|7997|8024|8037|8038|8045|8061|8070|8159|8246|8282).*'
     --sim.limit.exact=false
     --sim.loglevel=3
@@ -159,7 +166,8 @@ jobs:
           ${{ fromJSON(format('[{0}]', inputs.simulator || '
             "ethereum/eels/consume-engine",
             "ethereum/eels/consume-enginex",
-            "ethereum/eels/consume-rlp"
+            "ethereum/eels/consume-rlp",
+            "ethereum/eels/consume-wirex"
           '))}}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -181,6 +189,7 @@ jobs:
             ${{ matrix.simulator == 'ethereum/eels/consume-engine' && env.EELS_ENGINE_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-enginex' && env.EELS_ENGINEX_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-rlp' && env.EELS_RLP_FLAGS || '' }}
+            ${{ matrix.simulator == 'ethereum/eels/consume-wirex' && env.EELS_WIREX_FLAGS || '' }}
           s3_upload: true
           s3_bucket: ${{ env.S3_BUCKET }}
           s3_path: ${{ env.S3_PATH }}
