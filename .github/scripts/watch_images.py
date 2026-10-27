@@ -109,11 +109,12 @@ def wrapper_settings(wrapper: dict, mainnet: dict) -> dict | None:
     """Return what an EELS wrapper runs through mainnet.yaml, or None.
 
     The wrapper's own dispatch inputs are kept, so a run it starts queues
-    and times out as the wrapper's runs do.
+    and times out as the wrapper's runs do, and runs only the wrapper's
+    clients if it names them.
     """
     scripts = [step["with"]["script"] for job in wrapper["jobs"].values() for step in job["steps"] if "script" in step.get("with", {})]
     script = scripts[0] if len(scripts) == 1 else ""
-    fields = dict(re.findall(r"(workflow_id|simulator|concurrency_group|timeout_minutes): '([^']+)'", script))
+    fields = dict(re.findall(r"(workflow_id|simulator|client|concurrency_group|timeout_minutes): '([^']+)'", script))
     if fields.get("workflow_id") != "mainnet.yaml" or "simulator" not in fields:
         return None
     simulators = json.loads(fields["simulator"])
@@ -122,7 +123,7 @@ def wrapper_settings(wrapper: dict, mainnet: dict) -> dict | None:
     inputs = mainnet[True]["workflow_dispatch"]["inputs"]
     return {
         "workflow": "mainnet.yaml",
-        "clients": json.loads(inputs["client"]["default"]),
+        "clients": json.loads(fields.get("client", inputs["client"]["default"])),
         "simulators": simulators,
         "client_file": inputs["client_file"]["default"],
         "inputs": {key: fields[key] for key in ("concurrency_group", "timeout_minutes") if key in fields},
