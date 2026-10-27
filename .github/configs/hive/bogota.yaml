@@ -22,6 +22,13 @@
     baseimage: docker.ethquokkaops.io/dh/ethpandaops/besu
     tag: ${DEVNET}-linux-amd64
 
+# erigon
+- client: erigon
+  nametag: default
+  build_args:
+    baseimage: docker.ethquokkaops.io/dh/ethpandaops/erigon
+    tag: ${DEVNET}-linux-amd64
+
 # ethrex
 - client: ethrex
   nametag: default
@@ -41,6 +48,13 @@
   nametag: default
   build_args:
     baseimage: docker.ethquokkaops.io/dh/ethpandaops/nethermind
+    tag: ${DEVNET}-linux-amd64
+
+# nimbus-el
+- client: nimbus-el
+  nametag: default
+  build_args:
+    baseimage: docker.ethquokkaops.io/dh/ethpandaops/nimbus-eth1
     tag: ${DEVNET}-linux-amd64
 
 # reth
