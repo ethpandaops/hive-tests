@@ -121,10 +121,11 @@ env:
   EELS_WIREX_FLAGS: >-
     --sim.loglevel=3
   # Flags used for reth with the ethereum/eels/consume-wirex simulator:
-  # deselect a test variant that stalls reth's sync over WireX for the rest
-  # of its pre-alloc group. consume reads --sim.limit as a Python regex.
+  # deselect test_bad_v_r_s, whose variants stall reth's sync over WireX for
+  # the rest of their pre-alloc group. consume reads --sim.limit as a Python
+  # regex.
   RETH_WIREX_FLAGS: >-
-    --sim.limit='^(?!.*test_bad_v_r_s\[[^]]*v_34).*'
+    --sim.limit='^(?!.*test_bad_v_r_s\[).*'
   # Flags used for the ethereum/eels/consume-rlp simulator
   EELS_RLP_FLAGS: >-
     --sim.loglevel=3
