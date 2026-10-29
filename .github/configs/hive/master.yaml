@@ -83,6 +83,9 @@
 - simulator: ethereum/eels/consume-wirex
   build_args:
     tag: ${EELS_IMAGE_TAG}
+- simulator: ethereum/eels/consume-sync
+  build_args:
+    tag: ${EELS_IMAGE_TAG}
 - simulator: ethereum/eels/consume-rlp
   build_args:
     tag: ${EELS_IMAGE_TAG}

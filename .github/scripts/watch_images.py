@@ -30,8 +30,10 @@ simulator pair last ran, and with which images. A pair runs when:
   release, and reruns failures
 
 Clients due for the same simulators share one run, so no pair runs
-twice. A pair with an image that is not published yet runs once the
-image appears. A workflow missing from the previous state, as on the
+twice. A wrapper that runs its clients in one job (`client_matrix:
+'false'`), as `consume-sync` does to sync each client from every other,
+runs a simulator for all its clients once any of them is due. A pair
+with an image that is not published yet runs once the image appears. A workflow missing from the previous state, as on the
 very first check, is only recorded. Dispatches only with `--dispatch`.
 """
 
@@ -109,12 +111,15 @@ def wrapper_settings(wrapper: dict, mainnet: dict) -> dict | None:
     """Return what an EELS wrapper runs through mainnet.yaml, or None.
 
     The wrapper's own dispatch inputs are kept, so a run it starts queues
-    and times out as the wrapper's runs do, and runs only the wrapper's
-    clients if it names them.
+    and times out as the wrapper's runs do, runs only the wrapper's
+    clients if it names them, and runs them in one job if the wrapper
+    does.
     """
     scripts = [step["with"]["script"] for job in wrapper["jobs"].values() for step in job["steps"] if "script" in step.get("with", {})]
     script = scripts[0] if len(scripts) == 1 else ""
-    fields = dict(re.findall(r"(workflow_id|simulator|client|concurrency_group|timeout_minutes): '([^']+)'", script))
+    fields = dict(
+        re.findall(r"(workflow_id|simulator|client|client_matrix|concurrency_group|timeout_minutes): '([^']+)'", script)
+    )
     if fields.get("workflow_id") != "mainnet.yaml" or "simulator" not in fields:
         return None
     simulators = json.loads(fields["simulator"])
@@ -126,8 +131,9 @@ def wrapper_settings(wrapper: dict, mainnet: dict) -> dict | None:
         "clients": json.loads(fields.get("client", inputs["client"]["default"])),
         "simulators": simulators,
         "client_file": inputs["client_file"]["default"],
-        "inputs": {key: fields[key] for key in ("concurrency_group", "timeout_minutes") if key in fields},
+        "inputs": {key: fields[key] for key in ("client_matrix", "concurrency_group", "timeout_minutes") if key in fields},
         "json_lists": True,
+        "joint": fields.get("client_matrix") == "false",
         "quick": False,
         **release_settings(mainnet),
     }
@@ -284,6 +290,11 @@ def plan(images_now: dict, previous: dict, workflows: dict, now: datetime) -> li
             for key, refs in pairs.items()
             if due(previous[name].get(key), refs, throttled(config, key.split("|")[1]), refresh, now)
         }
+        if config.get("joint"):
+            # One job runs all clients together, so a simulator due for
+            # one client runs for every client that can run it.
+            simulators = {key.split("|")[1] for key in due_now}
+            due_now = {key for key in pairs if key.split("|")[1] in simulators}
         # Clients due for the same simulators share a run, so a run starts
         # only pairs that are due.
         groups = {}

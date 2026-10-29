@@ -72,6 +72,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(settings["workflow"], "mainnet.yaml")
         self.assertEqual(settings["simulators"], ["ethereum/eels/consume-rlp"])
         self.assertEqual(settings["inputs"], {"concurrency_group": "eels-consume-rlp", "timeout_minutes": "2880"})
+        self.assertFalse(settings["joint"])
         self.assertEqual(settings["prefix"], "tests")
         self.assertIn("besu", settings["clients"])
         self.assertFalse(settings["quick"])
@@ -82,6 +83,16 @@ class WorkflowTests(unittest.TestCase):
         settings = watch_images.wrapper_settings(wrapper, mainnet)
         self.assertNotIn("nimbus-el", settings["clients"])
         self.assertLess(set(settings["clients"]), set(json.loads(mainnet[True]["workflow_dispatch"]["inputs"]["client"]["default"])))
+
+    def test_runs_the_clients_of_a_joint_wrapper_in_one_job(self) -> None:
+        mainnet = yaml.safe_load((watch_images.WORKFLOWS / "mainnet.yaml").read_text())
+        wrapper = yaml.safe_load((watch_images.WORKFLOWS / "sim-ethereum-eels-consume-sync.yaml").read_text())
+        settings = watch_images.wrapper_settings(wrapper, mainnet)
+        self.assertTrue(settings["joint"])
+        self.assertEqual(settings["inputs"]["client_matrix"], "false")
+        self.assertEqual(settings["clients"], json.loads(mainnet[True]["workflow_dispatch"]["inputs"]["client"]["default"]))
+        rlp = yaml.safe_load((watch_images.WORKFLOWS / "sim-ethereum-eels-consume-rlp.yaml").read_text())
+        self.assertFalse(watch_images.wrapper_settings(rlp, mainnet)["joint"])
 
     def test_skips_wrappers_of_other_simulators(self) -> None:
         mainnet = yaml.safe_load((watch_images.WORKFLOWS / "mainnet.yaml").read_text())
@@ -203,6 +214,19 @@ class PlanTests(unittest.TestCase):
         previous = first_check(then, config)
         self.assertEqual(plan(now, 1, config=config, previous=previous), [(["besu"], [enginex])])
         self.assertEqual(plan(now, 12, config=config, previous=previous), [(["besu"], ["engine", enginex])])
+
+    def test_joint_runs_take_every_client(self) -> None:
+        joint = {**DASHBOARD, "joint": True}
+        now = images(client_besu="besu:1@new", client_geth="geth:1@b", simulator_engine="engine:1@c", simulator_rlp="rlp:1@d")
+        self.assertEqual(plan(now, 11, config=joint), [])
+        self.assertEqual(plan(now, 12, config=joint), [EVERY_PAIR])
+        rlp = images(client_besu="besu:1@a", client_geth="geth:1@b", simulator_engine="engine:1@c", simulator_rlp="rlp:1@new")
+        self.assertEqual(plan(rlp, 1, config=joint), [(["besu", "geth"], ["rlp"])])
+
+    def test_joint_runs_leave_out_unpublished_images(self) -> None:
+        joint = {**DASHBOARD, "joint": True}
+        now = images(client_besu="besu:2@", client_geth="geth:2@e", simulator_engine="engine:1@c", simulator_rlp="rlp:1@d")
+        self.assertEqual(plan(now, 1, config=joint), [(["geth"], ["engine", "rlp"])])
 
     def test_waiting_rebuild_stays_due(self) -> None:
         now = images(client_besu="besu:1@new", client_geth="geth:1@b", simulator_engine="engine:1@c", simulator_rlp="rlp:1@d")
