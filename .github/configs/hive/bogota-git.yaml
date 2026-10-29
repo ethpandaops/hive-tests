@@ -90,11 +90,6 @@
 - simulator: ethereum/eels/consume-rlp
   build_args:
     tag: ${EELS_IMAGE_TAG}
-# devnets/bogota/2 does not carry the consume-wirex simulator, so it has no
-# bogota-devnet image. Build it from forks/bogota, which does, against the
-# latest bogota-devnet fixtures release.
 - simulator: ethereum/eels/consume-wirex
-  dockerfile: git
   build_args:
-    branch: forks/bogota
-    fixtures: tests-bogota-devnet@latest
+    tag: ${EELS_IMAGE_TAG}
