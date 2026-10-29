@@ -126,6 +126,9 @@ env:
   # regex.
   RETH_WIREX_FLAGS: >-
     --sim.limit='^(?!.*test_bad_v_r_s\[).*'
+  # Flags used for the ethereum/eels/consume-sync simulator
+  EELS_SYNC_FLAGS: >-
+    --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-rlp simulator
   EELS_RLP_FLAGS: >-
     --sim.loglevel=3
@@ -242,6 +245,7 @@ jobs:
             ${{ matrix.simulator == 'ethereum/eels/consume-enginex' && env.EELS_ENGINEX_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-wirex' && env.EELS_WIREX_FLAGS || '' }}
             ${{ matrix.client == 'reth' && matrix.simulator == 'ethereum/eels/consume-wirex' && env.RETH_WIREX_FLAGS || '' }}
+            ${{ matrix.simulator == 'ethereum/eels/consume-sync' && env.EELS_SYNC_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-rlp' && env.EELS_RLP_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/execute-blobs' && env.EELS_EXECUTE_FLAGS || '' }}
             ${{ inputs.extra_flags }}
