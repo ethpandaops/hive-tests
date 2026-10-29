@@ -80,19 +80,19 @@ env:
   # Flags used for the ethereum/eels/consume-engine simulator
   EELS_ENGINE_FLAGS: >-
     --sim.parallelism=6
-    --sim.limit='.*8141.*'
+    --sim.limit='.*(4758|7906|8141|8151|8250|8253|8272|8298).*'
     --sim.limit.exact=false
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-enginex simulator
   EELS_ENGINEX_FLAGS: >-
     --sim.parallelism=4
-    --sim.limit='.*8141.*'
+    --sim.limit='.*(4758|7906|8141|8151|8250|8253|8272|8298).*'
     --sim.limit.exact=false
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-rlp simulator
   EELS_RLP_FLAGS: >-
     --sim.parallelism=6
-    --sim.limit='.*8141.*'
+    --sim.limit='.*(4758|7906|8141|8151|8250|8253|8272|8298).*'
     --sim.limit.exact=false
     --sim.loglevel=3
 
