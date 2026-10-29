@@ -80,19 +80,19 @@ env:
   # Flags used for the ethereum/eels/consume-engine simulator
   EELS_ENGINE_FLAGS: >-
     --sim.parallelism=6
-    --sim.limit='.*fork_Bogota.*'
+    --sim.limit='.*fork_(AmsterdamToBogotaAtTime15k|Bogota).*'
     --sim.limit.exact=false
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-enginex simulator
   EELS_ENGINEX_FLAGS: >-
     --sim.parallelism=4
-    --sim.limit='.*fork_Bogota.*'
+    --sim.limit='.*fork_(AmsterdamToBogotaAtTime15k|Bogota).*'
     --sim.limit.exact=false
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-rlp simulator
   EELS_RLP_FLAGS: >-
     --sim.parallelism=6
-    --sim.limit='.*fork_Bogota.*'
+    --sim.limit='.*fork_(AmsterdamToBogotaAtTime15k|Bogota).*'
     --sim.limit.exact=false
     --sim.loglevel=3
 
