@@ -221,7 +221,30 @@ jobs:
           host="cpu=${cpu:-unknown}; cpus=$(nproc); memory=$memory; runner=$RUNNER_NAME"
           echo "::notice title=Runner host::$host"
           echo "Runner host: \`$host\`" >> "$GITHUB_STEP_SUMMARY"
-          if [[ "${{ matrix.simulator }}" == ethereum/eels/consume-* ]]; then echo "::notice title=Runner uptime::$(uptime)"; fi
+          if [[ "${{ matrix.simulator }}" == ethereum/eels/consume-* ]]; then
+            echo "::notice title=Runner uptime::$(uptime)"
+            # Docker state left by earlier jobs, read before this job's Docker
+            # starts. Each job runs its own daemon with its root under
+            # $runs/run-<id>/data, so earlier jobs' volumes would sit in
+            # $runs/run-*/data/volumes/<id>.
+            runs=/data/gh-home/setup-docker-action
+            # The system paths are root-only; read them with sudo when the
+            # runner allows it, and say so when it does not.
+            sudo=$(sudo -n true 2>/dev/null && echo "sudo -n" || true)
+            mount=$(findmnt -no SOURCE,FSTYPE,SIZE,USED,USE% -T /data 2>/dev/null || echo none)
+            dirs=$($sudo find "$runs" -mindepth 1 -maxdepth 1 -name 'run-*' 2>/dev/null | wc -l || true)
+            oldest=$($sudo find "$runs" -mindepth 1 -maxdepth 1 -name 'run-*' -printf '%T@\n' 2>/dev/null | sort -n | head -n 1 || true)
+            age=$([ -n "$oldest" ] && echo "$(( ($(date +%s) - ${oldest%.*}) / 3600 ))h" || echo none)
+            volumes=$($sudo find "$runs" -mindepth 4 -maxdepth 4 -path '*/data/volumes/*' -type d 2>/dev/null | wc -l || true)
+            size=$(timeout 60 $sudo du -sh "$runs" 2>/dev/null | cut -f1 || true)
+            if [ -n "$sudo" ] || [ -r /var/lib/docker/volumes ]; then
+              system=$($sudo find /var/lib/docker/volumes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l || true)
+              containerd=$(timeout 60 $sudo du -sh /var/lib/containerd 2>/dev/null | cut -f1 || true)
+            else
+              system=unreadable containerd=unreadable
+            fi
+            echo "::notice title=Runner leftovers::data=${mount}; earlier run dirs=${dirs} (oldest ${age}); their volumes=${volumes}; size=${size:-0}; /var/lib/docker volumes=${system}; /var/lib/containerd=${containerd:-none}"
+          fi
 
       - uses: ethpandaops/actions/docker-login@a91b7a8dd6a264f5e845ac2aa52d2d6f24e6d01d
         with:
