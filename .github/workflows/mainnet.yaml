@@ -221,6 +221,7 @@ jobs:
           host="cpu=${cpu:-unknown}; cpus=$(nproc); memory=$memory; runner=$RUNNER_NAME"
           echo "::notice title=Runner host::$host"
           echo "Runner host: \`$host\`" >> "$GITHUB_STEP_SUMMARY"
+          if [[ "${{ matrix.simulator }}" == ethereum/eels/consume-* ]]; then echo "::notice title=Runner uptime::$(uptime)"; fi
 
       - uses: ethpandaops/actions/docker-login@a91b7a8dd6a264f5e845ac2aa52d2d6f24e6d01d
         with:
