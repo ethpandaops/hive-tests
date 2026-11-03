@@ -99,6 +99,16 @@ env:
     --sim.limit='.*(2780|7708|7732|7778|7843|7928|7954|7975|7976|7981|7997|8024|8037|8038|8045|8061|8070|8159|8246|8282).*'
     --sim.limit.exact=false
     --sim.loglevel=3
+  # Flags used for reth with the ethereum/eels/consume-wirex simulator, in
+  # place of EELS_WIREX_FLAGS: the same flags, with test_bad_v_r_s
+  # deselected, as on the mainnet workflow. Its variants stall reth's sync
+  # over WireX for the rest of their pre-alloc group. consume reads
+  # --sim.limit as a Python regex.
+  RETH_WIREX_FLAGS: >-
+    --sim.parallelism=4
+    --sim.limit='^(?!.*test_bad_v_r_s\[).*(2780|7708|7732|7778|7843|7928|7954|7975|7976|7981|7997|8024|8037|8038|8045|8061|8070|8159|8246|8282).*'
+    --sim.limit.exact=false
+    --sim.loglevel=3
 
 jobs:
   prepare:
@@ -198,7 +208,8 @@ jobs:
             ${{ matrix.simulator == 'ethereum/eels/consume-engine' && env.EELS_ENGINE_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-enginex' && env.EELS_ENGINEX_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-rlp' && env.EELS_RLP_FLAGS || '' }}
-            ${{ matrix.simulator == 'ethereum/eels/consume-wirex' && env.EELS_WIREX_FLAGS || '' }}
+            ${{ matrix.simulator == 'ethereum/eels/consume-wirex' && matrix.client != 'reth' && env.EELS_WIREX_FLAGS || '' }}
+            ${{ matrix.simulator == 'ethereum/eels/consume-wirex' && matrix.client == 'reth' && env.RETH_WIREX_FLAGS || '' }}
           s3_upload: true
           s3_bucket: ${{ env.S3_BUCKET }}
           s3_path: ${{ env.S3_PATH }}
