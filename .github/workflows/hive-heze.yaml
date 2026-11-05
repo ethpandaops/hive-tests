@@ -86,7 +86,7 @@ env:
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-enginex simulator
   EELS_ENGINEX_FLAGS: >-
-    --sim.parallelism=4
+    --sim.parallelism=6
     --sim.limit='.*fork_(AmsterdamToBogotaAtTime15k|Bogota).*'
     --sim.limit.exact=false
     --sim.loglevel=3
@@ -98,10 +98,19 @@ env:
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-wirex simulator
   EELS_WIREX_FLAGS: >-
-    --sim.parallelism=4
+    --sim.parallelism=6
     --sim.limit='.*fork_(AmsterdamToBogotaAtTime15k|Bogota).*'
     --sim.limit.exact=false
     --sim.loglevel=3
+  # Flags used for go-ethereum, reth and ethrex with the
+  # ethereum/eels/consume-engine, ethereum/eels/consume-enginex and
+  # ethereum/eels/consume-rlp simulators:
+  # their starts need little CPU, so they run more workers on the 16 vCPU
+  # runners than the managed-runtime clients (besu, nethermind) and the
+  # unmeasured ones. Added after the simulator flags; hive keeps the last
+  # --sim.parallelism.
+  FAST_START_FLAGS: >-
+    --sim.parallelism=8
 
 jobs:
   prepare:
@@ -164,6 +173,7 @@ jobs:
       HIVE_AMSTERDAM_TIMESTAMP: "1777456800"
     runs-on: >-
       ${{
+        contains(matrix.simulator, 'ethereum/eels/consume-') && 'self-hosted-ghr-size-ccx43-x64' ||
         contains(matrix.simulator, 'ethereum/eels/') && 'self-hosted-ghr-size-ccx33-x64' ||
         'ubuntu-latest'
       }}
@@ -206,6 +216,7 @@ jobs:
             ${{ matrix.simulator == 'ethereum/eels/consume-enginex' && env.EELS_ENGINEX_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-rlp' && env.EELS_RLP_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-wirex' && env.EELS_WIREX_FLAGS || '' }}
+            ${{ contains(fromJSON('["go-ethereum","reth","ethrex"]'), matrix.client) && (matrix.simulator == 'ethereum/eels/consume-engine' || matrix.simulator == 'ethereum/eels/consume-enginex' || matrix.simulator == 'ethereum/eels/consume-rlp') && env.FAST_START_FLAGS || '' }}
           s3_upload: true
           s3_bucket: ${{ env.S3_BUCKET }}
           s3_path: ${{ env.S3_PATH }}
