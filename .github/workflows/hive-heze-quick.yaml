@@ -102,6 +102,14 @@ env:
     --sim.limit='.*(7805|8198|fork_AmsterdamToBogotaAtTime15k).*'
     --sim.limit.exact=false
     --sim.loglevel=3
+  # Flags used for go-ethereum, reth and ethrex with the
+  # ethereum/eels/consume-engine and ethereum/eels/consume-rlp simulators:
+  # their starts need little CPU, so they run more workers on the 16 vCPU
+  # runners than the managed-runtime clients (besu, nethermind) and the
+  # unmeasured ones. Added after the simulator flags; hive keeps the last
+  # --sim.parallelism.
+  FAST_START_FLAGS: >-
+    --sim.parallelism=8
 
 jobs:
   prepare:
@@ -207,6 +215,7 @@ jobs:
             ${{ matrix.simulator == 'ethereum/eels/consume-enginex' && env.EELS_ENGINEX_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-rlp' && env.EELS_RLP_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-wirex' && env.EELS_WIREX_FLAGS || '' }}
+            ${{ contains(fromJSON('["go-ethereum","reth","ethrex"]'), matrix.client) && (matrix.simulator == 'ethereum/eels/consume-engine' || matrix.simulator == 'ethereum/eels/consume-rlp') && env.FAST_START_FLAGS || '' }}
           s3_upload: true
           s3_bucket: ${{ env.S3_BUCKET }}
           s3_path: ${{ env.S3_PATH }}
