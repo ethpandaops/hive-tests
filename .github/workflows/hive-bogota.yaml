@@ -164,6 +164,7 @@ jobs:
       HIVE_AMSTERDAM_TIMESTAMP: "1777456800"
     runs-on: >-
       ${{
+        contains(matrix.simulator, 'ethereum/eels/consume-') && 'self-hosted-ghr-size-ccx43-x64' ||
         contains(matrix.simulator, 'ethereum/eels/') && 'self-hosted-ghr-size-ccx33-x64' ||
         'ubuntu-latest'
       }}
