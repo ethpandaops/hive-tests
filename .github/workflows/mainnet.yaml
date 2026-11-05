@@ -117,9 +117,11 @@ env:
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-enginex simulator
   EELS_ENGINEX_FLAGS: >-
+    --sim.parallelism=6
     --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-wirex simulator
   EELS_WIREX_FLAGS: >-
+    --sim.parallelism=6
     --sim.loglevel=3
   # Flags used for reth with the ethereum/eels/consume-wirex simulator:
   # deselect test_bad_v_r_s, whose variants stall reth's sync over WireX for
@@ -147,7 +149,8 @@ env:
   GRAPHQL_FLAGS: >-
     --sim.loglevel=3
   # Flags used for go-ethereum, reth and ethrex with the
-  # ethereum/eels/consume-engine and ethereum/eels/consume-rlp simulators:
+  # ethereum/eels/consume-engine, ethereum/eels/consume-enginex and
+  # ethereum/eels/consume-rlp simulators:
   # their starts need little CPU, so they run more workers on the 16 vCPU
   # runners than the managed-runtime clients (besu, nethermind) and the
   # unmeasured ones. Added after the simulator flags; hive keeps the last
@@ -287,7 +290,7 @@ jobs:
             ${{ matrix.simulator == 'ethereum/eels/consume-sync' && env.EELS_SYNC_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-rlp' && env.EELS_RLP_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/execute-blobs' && env.EELS_EXECUTE_FLAGS || '' }}
-            ${{ contains(fromJSON('["go-ethereum","reth","ethrex"]'), matrix.client) && (matrix.simulator == 'ethereum/eels/consume-engine' || matrix.simulator == 'ethereum/eels/consume-rlp') && env.FAST_START_FLAGS || '' }}
+            ${{ contains(fromJSON('["go-ethereum","reth","ethrex"]'), matrix.client) && (matrix.simulator == 'ethereum/eels/consume-engine' || matrix.simulator == 'ethereum/eels/consume-enginex' || matrix.simulator == 'ethereum/eels/consume-rlp') && env.FAST_START_FLAGS || '' }}
             ${{ inputs.extra_flags }}
           s3_upload: true
           s3_bucket: ${{ env.S3_BUCKET }}
