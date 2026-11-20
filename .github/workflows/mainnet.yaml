@@ -132,6 +132,9 @@ env:
   # Flags used for the ethereum/eels/consume-sync simulator
   EELS_SYNC_FLAGS: >-
     --sim.loglevel=3
+  # Flags used for the ethereum/eels/consume-reorg simulator
+  EELS_REORG_FLAGS: >-
+    --sim.loglevel=3
   # Flags used for the ethereum/eels/consume-rlp simulator
   EELS_RLP_FLAGS: >-
     --sim.parallelism=6
@@ -288,6 +291,7 @@ jobs:
             ${{ matrix.simulator == 'ethereum/eels/consume-wirex' && env.EELS_WIREX_FLAGS || '' }}
             ${{ matrix.client == 'reth' && matrix.simulator == 'ethereum/eels/consume-wirex' && env.RETH_WIREX_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-sync' && env.EELS_SYNC_FLAGS || '' }}
+            ${{ matrix.simulator == 'ethereum/eels/consume-reorg' && env.EELS_REORG_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/consume-rlp' && env.EELS_RLP_FLAGS || '' }}
             ${{ matrix.simulator == 'ethereum/eels/execute-blobs' && env.EELS_EXECUTE_FLAGS || '' }}
             ${{ contains(fromJSON('["go-ethereum","reth","ethrex"]'), matrix.client) && (matrix.simulator == 'ethereum/eels/consume-engine' || matrix.simulator == 'ethereum/eels/consume-enginex' || matrix.simulator == 'ethereum/eels/consume-rlp') && env.FAST_START_FLAGS || '' }}
