@@ -109,7 +109,6 @@ env:
   GLOBAL_EXTRA_FLAGS: >-
     --client.checktimelimit=180s
     --sim.parallelism=4
-    --docker.auth
     --docker.buildoutput
   # Flags used for the ethereum/eels/consume-engine simulator
   EELS_ENGINE_FLAGS: >-
@@ -263,10 +262,20 @@ jobs:
             echo "::notice title=Runner leftovers::data=${mount}; earlier run dirs=${dirs} (oldest ${age}); their volumes=${volumes}; size=${size:-0}; /var/lib/docker volumes=${system}; /var/lib/containerd=${containerd:-none}"
           fi
 
-      - uses: ethpandaops/actions/docker-login@a91b7a8dd6a264f5e845ac2aa52d2d6f24e6d01d
-        with:
-          username: ethpandaops
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      # Self-hosted runners' Docker already pulls Docker Hub images through
+      # the ethpandaops pull-through cache, falling back to Docker Hub. Set
+      # GitHub-hosted runners up the same way: hive-github-action starts
+      # Docker with this daemon.json.
+      - name: Use the Docker Hub pull-through cache
+        if: runner.environment == 'github-hosted'
+        run: |
+          config=/etc/docker/daemon.json
+          current=$(sudo cat "$config" 2>/dev/null || true)
+          [ -n "$current" ] || current='{}'
+          echo "$current" \
+            | jq '."registry-mirrors" = ["https://docker-cache.ethquokkaops.io"]' \
+            | sudo tee "$config"
+          sudo systemctl restart docker
 
       - uses: ethpandaops/hive-github-action/helpers/self-hosted-runner-dependencies@09050fc75bae8a10b1876a0826ca4114ea9ed6e8 # v0.6.3
         if: runner.environment != 'github-hosted'
